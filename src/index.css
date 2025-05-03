@@ -52,7 +52,8 @@
   }
 
   body {
-    @apply bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 min-h-screen text-foreground;
+    @apply bg-gradient-to-br from-indigo-600 via-blue-500 to-blue-300 min-h-screen text-foreground;
+    background-attachment: fixed;
   }
 }
 
@@ -62,18 +63,18 @@
 
 /* UI Elements styling inspired by the image */
 .card {
-  @apply bg-gradient-to-br from-card to-muted rounded-xl shadow-xl border border-muted;
+  @apply bg-white/10 rounded-xl shadow-xl border border-white/20;
   backdrop-filter: blur(10px);
 }
 
 .gradient-border {
   @apply relative rounded-xl overflow-hidden;
   padding: 1px;
-  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+  background: linear-gradient(135deg, #33C3F0, #9BA5FF);
 }
 
 .gradient-border > div {
-  @apply bg-card rounded-xl p-4 h-full;
+  @apply bg-white/10 backdrop-blur-md rounded-xl p-4 h-full;
 }
 
 .floating-element {
@@ -93,7 +94,7 @@
 }
 
 .glass-card {
-  @apply bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl;
+  @apply bg-white/20 backdrop-blur-lg border border-white/20 rounded-xl shadow-lg;
 }
 
 /* Animate in elements */

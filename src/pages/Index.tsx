@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import AuthForm from '@/components/auth/AuthForm';
 import Dashboard from '@/components/dashboard/Dashboard';
 import Logo from '@/components/Logo';
-import { LayoutDashboard, Circle } from 'lucide-react';
+import { LayoutDashboard, Circle, Square, Triangle } from 'lucide-react';
 
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -17,19 +17,22 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-dot-pattern relative overflow-hidden">
       {/* Background elements */}
-      <div className="absolute top-20 left-20 w-32 h-32 bg-primary/20 rounded-full blur-3xl"></div>
-      <div className="absolute top-40 right-20 w-40 h-40 bg-secondary/20 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-20 left-1/3 w-36 h-36 bg-accent/20 rounded-full blur-3xl"></div>
+      <div className="absolute top-20 left-20 w-40 h-40 bg-blue-400/30 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-40 right-20 w-60 h-60 bg-indigo-500/30 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-20 left-1/3 w-40 h-40 bg-blue-300/30 rounded-full blur-3xl"></div>
       
       {/* Floating elements */}
       <div className="hidden lg:block absolute top-40 right-[15%] floating-element" style={{animationDelay: "1s"}}>
-        <Circle className="text-primary/30" size={60} />
+        <Circle className="text-blue-200" size={60} />
       </div>
-      <div className="hidden lg:block absolute bottom-40 left-[15%] floating-element" style={{animationDelay: "2s"}}>
-        <Circle className="text-secondary/30" size={40} />
+      <div className="hidden lg:block absolute top-1/3 left-[20%] floating-element" style={{animationDelay: "2s"}}>
+        <Square className="text-indigo-200 rotate-45" size={30} />
+      </div>
+      <div className="hidden lg:block absolute bottom-40 left-[15%] floating-element" style={{animationDelay: "3s"}}>
+        <Triangle className="text-blue-100" size={40} />
       </div>
 
-      <header className="border-b border-white/10 bg-black/20 backdrop-blur-lg">
+      <header className="border-b border-white/10 bg-white/5 backdrop-blur-lg">
         <div className="container flex h-16 items-center">
           <Logo />
           {isAuthenticated && (
@@ -57,14 +60,12 @@ const Index = () => {
               <div className="mb-4">
                 <Logo size="xl" />
               </div>
-              <p className="mt-4 text-muted-foreground">
+              <p className="mt-4 text-white/80">
                 Application de suivi de santé et de gestion d'ordonnances
               </p>
             </div>
-            <div className="gradient-border">
-              <div>
-                <AuthForm onAuthenticated={handleAuthenticated} />
-              </div>
+            <div className="glass-card p-1 shadow-2xl">
+              <AuthForm onAuthenticated={handleAuthenticated} />
             </div>
           </div>
         )}
