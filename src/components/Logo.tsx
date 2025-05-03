@@ -11,16 +11,14 @@ const Logo: React.FC<{ size?: 'sm' | 'md' | 'lg' | 'xl' }> = ({ size = 'md' }) =
 
   return (
     <div className={`flex items-center ${sizeClasses[size]}`}>
-      <span className="logo-obou relative">
+      <span className="font-extrabold text-white tracking-tight">
         Obou
-        <span className="logo-shadow absolute -z-10"></span>
       </span>
       <span className="relative flex">
-        <span className="logo-cross absolute -left-2 top-1 transform -rotate-3">+</span>
-        <span className="logo-med relative">
+        <span className="font-extrabold text-white tracking-tight">
           Med
-          <span className="logo-shadow absolute -z-10"></span>
         </span>
+        <span className="logo-cross absolute -right-6 top-1 transform -rotate-3 text-red-500 font-bold">+</span>
       </span>
     </div>
   );
