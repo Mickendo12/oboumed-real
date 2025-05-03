@@ -5,44 +5,44 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 240 50% 5%;
+    --foreground: 0 0% 98%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 240 25% 8%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 240 25% 8%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 196 80% 57%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 252 96% 60%;
+    --primary-foreground: 0 0% 98%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 225 73% 57%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 240 20% 20%;
+    --muted-foreground: 240 10% 70%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 225 73% 57%;
+    --accent-foreground: 0 0% 98%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 196 80% 57%;
+    --border: 240 20% 20%;
+    --input: 240 20% 20%;
+    --ring: 252 96% 60%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-background: 240 25% 8%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 252 96% 60%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 240 20% 20%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 240 20% 20%;
+    --sidebar-ring: 252 96% 60%;
   }
 }
 
@@ -52,18 +52,85 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 min-h-screen text-foreground;
   }
 }
 
 .logo-obou {
-  @apply font-bold text-oboumed-red;
+  @apply font-extrabold text-oboumed-red tracking-tight;
+  text-shadow: 0px 2px 0 #b91c28, 
+               2px 4px 0 #8f1520, 
+               3px 6px 6px rgba(0, 0, 0, 0.6);
+  transform: perspective(500px) rotateX(10deg);
 }
 
 .logo-med {
-  @apply font-bold text-oboumed-blue;
+  @apply font-extrabold text-oboumed-blue tracking-tight;
+  text-shadow: 0px 2px 0 #1CA6B9, 
+               2px 4px 0 #158999, 
+               3px 6px 6px rgba(0, 0, 0, 0.6);
+  transform: perspective(500px) rotateX(10deg);
 }
 
 .logo-cross {
-  @apply text-oboumed-green;
+  @apply font-extrabold text-oboumed-green;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.4));
+}
+
+.logo-shadow {
+  filter: blur(10px);
+  opacity: 0.5;
+  inset: 0;
+}
+
+/* UI Elements styling inspired by the image */
+.card {
+  @apply bg-gradient-to-br from-card to-muted rounded-xl shadow-xl border border-muted;
+  backdrop-filter: blur(10px);
+}
+
+.gradient-border {
+  @apply relative rounded-xl overflow-hidden;
+  padding: 1px;
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+}
+
+.gradient-border > div {
+  @apply bg-card rounded-xl p-4 h-full;
+}
+
+.floating-element {
+  animation: float 6s ease-in-out infinite;
+  transform-style: preserve-3d;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+  100% { transform: translateY(0px); }
+}
+
+.bg-dot-pattern {
+  background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.15) 1px, transparent 0);
+  background-size: 20px 20px;
+}
+
+.glass-card {
+  @apply bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl;
+}
+
+/* Animate in elements */
+.animate-fade-in {
+  animation: fadeIn 0.8s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
