@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import NewPrescriptionForm from '../prescriptions/NewPrescriptionForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Bell } from 'lucide-react';
+import { Plus, Bell, UserRound } from 'lucide-react';
 import ReminderForm, { Reminder } from '../reminders/ReminderForm';
 import RemindersList from '../reminders/RemindersList';
+import UserProfile from './UserProfile';
 import { getRemindersForUser, addReminder, deleteReminder } from '@/services/firestoreService';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -138,6 +139,10 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
               <TabsTrigger value="prescriptions">Ordonnances</TabsTrigger>
               <TabsTrigger value="medications">Médicaments</TabsTrigger>
               <TabsTrigger value="reminders">Rappels</TabsTrigger>
+              <TabsTrigger value="profile">
+                <UserRound size={16} className="mr-2" /> 
+                Mon profil
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="prescriptions">
@@ -198,6 +203,10 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
                   onDelete={handleDeleteReminder}
                 />
               )}
+            </TabsContent>
+
+            <TabsContent value="profile">
+              <UserProfile userId={userId} />
             </TabsContent>
           </Tabs>
         </>

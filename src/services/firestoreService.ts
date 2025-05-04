@@ -15,9 +15,11 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Reminder } from "@/components/reminders/ReminderForm";
+import { UserProfile } from "./authService";
 
 // Define collection names
 export const COLLECTIONS = {
+  USERS: "users",
   MEDICATIONS: "medications",
   REMINDERS: "reminders",
   PRESCRIPTIONS: "prescriptions"
@@ -99,4 +101,34 @@ export const deleteReminder = (
   reminderId: string
 ): Promise<void> => {
   return deleteDocument(COLLECTIONS.REMINDERS, reminderId);
+};
+
+// User profile functions
+export const getUserProfile = async (
+  userId: string
+): Promise<UserProfile | null> => {
+  const q = query(
+    collection(db, COLLECTIONS.USERS),
+    where("userId", "==", userId)
+  );
+  
+  const querySnapshot = await getDocs(q);
+  if (querySnapshot.empty) return null;
+  
+  const userDoc = querySnapshot.docs[0];
+  return { id: userDoc.id, ...userDoc.data() } as unknown as UserProfile;
+};
+
+export const updateUserProfile = async (
+  userProfileId: string, 
+  data: Partial<UserProfile>
+): Promise<void> => {
+  return updateDocument(COLLECTIONS.USERS, userProfileId, data);
+};
+
+export const toggleShareWithDoctor = async (
+  userProfileId: string,
+  shareWithDoctor: boolean
+): Promise<void> => {
+  return updateDocument(COLLECTIONS.USERS, userProfileId, { shareWithDoctor });
 };
