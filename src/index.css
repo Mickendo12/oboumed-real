@@ -52,8 +52,25 @@
   }
 
   body {
-    @apply bg-gradient-to-br from-indigo-600 via-blue-500 to-blue-300 min-h-screen text-foreground;
-    background-attachment: fixed;
+    @apply bg-black text-foreground;
+    background: radial-gradient(circle at center, #13001e 0%, #000000 100%);
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('/lovable-uploads/2e9e7426-edf9-467c-ade8-427207724313.png') no-repeat;
+    background-size: cover;
+    background-position: center;
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: -1;
   }
 }
 
@@ -63,18 +80,18 @@
 
 /* UI Elements styling inspired by the image */
 .card {
-  @apply bg-white/10 rounded-xl shadow-xl border border-white/20;
-  backdrop-filter: blur(10px);
+  @apply bg-black/30 rounded-xl shadow-xl border border-purple-500/20;
+  backdrop-filter: blur(12px);
 }
 
 .gradient-border {
   @apply relative rounded-xl overflow-hidden;
   padding: 1px;
-  background: linear-gradient(135deg, #33C3F0, #9BA5FF);
+  background: linear-gradient(135deg, #a239ff, #5e79ff);
 }
 
 .gradient-border > div {
-  @apply bg-white/10 backdrop-blur-md rounded-xl p-4 h-full;
+  @apply bg-black/40 backdrop-blur-md rounded-xl p-4 h-full;
 }
 
 .floating-element {
@@ -89,12 +106,12 @@
 }
 
 .bg-dot-pattern {
-  background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.15) 1px, transparent 0);
+  background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.08) 1px, transparent 0);
   background-size: 20px 20px;
 }
 
 .glass-card {
-  @apply bg-white/20 backdrop-blur-lg border border-white/20 rounded-xl shadow-lg;
+  @apply bg-black/30 backdrop-blur-lg border border-purple-500/20 rounded-xl shadow-lg;
 }
 
 /* Animate in elements */
@@ -115,10 +132,49 @@
 
 /* Dark containers with reduced opacity */
 .dark-container {
-  @apply bg-black/5 backdrop-blur-md border border-white/15;
+  @apply bg-black/20 backdrop-blur-md border border-purple-500/20;
 }
 
 .header-container {
-  @apply border-b border-white/10 bg-black/5 backdrop-blur-lg;
+  @apply border-b border-purple-500/10 bg-black/20 backdrop-blur-lg;
 }
 
+/* Light trails inspired by the image */
+.light-trail {
+  position: fixed;
+  height: 100vh;
+  pointer-events: none;
+  opacity: 0.6;
+  filter: blur(40px);
+  z-index: -1;
+}
+
+.light-trail-1 {
+  width: 50vw;
+  background: linear-gradient(45deg, #ff2cdf 10%, transparent 70%);
+  top: 10%;
+  left: -30%;
+  transform: rotate(30deg);
+  animation: trailFloat 20s ease-in-out infinite alternate;
+}
+
+.light-trail-2 {
+  width: 60vw;
+  background: linear-gradient(-45deg, #4462ff 0%, transparent 80%);
+  top: 40%;
+  right: -20%;
+  transform: rotate(-25deg);
+  animation: trailFloat 18s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes trailFloat {
+  0% { transform: rotate(30deg) translateY(0); }
+  50% { transform: rotate(35deg) translateY(-5vh); }
+  100% { transform: rotate(30deg) translateY(0); }
+}
+
+@keyframes trailFloat2 {
+  0% { transform: rotate(-25deg) translateY(0); }
+  50% { transform: rotate(-30deg) translateY(5vh); }
+  100% { transform: rotate(-25deg) translateY(0); }
+}

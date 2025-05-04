@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import AuthForm from '@/components/auth/AuthForm';
 import Dashboard from '@/components/dashboard/Dashboard';
 import Logo from '@/components/Logo';
-import { LayoutDashboard, Circle, Square, Triangle } from 'lucide-react';
+import { LayoutDashboard } from 'lucide-react';
 
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -16,22 +16,10 @@ const Index = () => {
   
   return (
     <div className="min-h-screen bg-dot-pattern relative overflow-hidden">
-      {/* Background elements */}
-      <div className="absolute top-20 left-20 w-40 h-40 bg-blue-400/30 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-40 right-20 w-60 h-60 bg-indigo-500/30 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-20 left-1/3 w-40 h-40 bg-blue-300/30 rounded-full blur-3xl"></div>
+      {/* Light trails inspired by the image */}
+      <div className="light-trail light-trail-1"></div>
+      <div className="light-trail light-trail-2"></div>
       
-      {/* Floating elements */}
-      <div className="hidden lg:block absolute top-40 right-[15%] floating-element" style={{animationDelay: "1s"}}>
-        <Circle className="text-blue-200" size={60} />
-      </div>
-      <div className="hidden lg:block absolute top-1/3 left-[20%] floating-element" style={{animationDelay: "2s"}}>
-        <Square className="text-indigo-200 rotate-45" size={30} />
-      </div>
-      <div className="hidden lg:block absolute bottom-40 left-[15%] floating-element" style={{animationDelay: "3s"}}>
-        <Triangle className="text-blue-100" size={40} />
-      </div>
-
       <header className="header-container">
         <div className="container flex h-16 items-center">
           <Logo />
