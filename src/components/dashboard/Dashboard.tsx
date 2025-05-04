@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import NewPrescriptionForm from '../prescriptions/NewPrescriptionForm';
@@ -7,23 +7,83 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Bell } from 'lucide-react';
 import ReminderForm, { Reminder } from '../reminders/ReminderForm';
 import RemindersList from '../reminders/RemindersList';
+import { getRemindersForUser, addReminder, deleteReminder } from '@/services/firestoreService';
+import { useToast } from '@/components/ui/use-toast';
 
 interface DashboardProps {
   userName: string;
+  userId: string;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
+const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
   const [isCreatingPrescription, setIsCreatingPrescription] = useState(false);
   const [isCreatingReminder, setIsCreatingReminder] = useState(false);
   const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
   
-  const handleSaveReminder = (reminder: Reminder) => {
-    setReminders([...reminders, reminder]);
-    setIsCreatingReminder(false);
+  // Load reminders from Firestore
+  useEffect(() => {
+    const fetchReminders = async () => {
+      try {
+        if (!userId) return;
+        
+        setLoading(true);
+        const userReminders = await getRemindersForUser(userId);
+        setReminders(userReminders);
+      } catch (error) {
+        console.error("Error fetching reminders:", error);
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Impossible de charger vos rappels."
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchReminders();
+  }, [userId, toast]);
+  
+  const handleSaveReminder = async (reminder: Omit<Reminder, "id">) => {
+    try {
+      const docRef = await addReminder(reminder, userId);
+      
+      const newReminder: Reminder = {
+        ...reminder,
+        id: docRef.id
+      };
+      
+      setReminders([...reminders, newReminder]);
+      setIsCreatingReminder(false);
+      
+      toast({
+        title: "Rappel ajouté",
+        description: `Rappel pour ${reminder.medicationName} créé avec succès.`
+      });
+    } catch (error) {
+      console.error("Error saving reminder:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Une erreur s'est produite lors de l'ajout du rappel."
+      });
+    }
   };
   
-  const handleDeleteReminder = (id: string) => {
-    setReminders(reminders.filter(reminder => reminder.id !== id));
+  const handleDeleteReminder = async (id: string) => {
+    try {
+      await deleteReminder(id);
+      setReminders(reminders.filter(reminder => reminder.id !== id));
+    } catch (error) {
+      console.error("Error deleting reminder:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Une erreur s'est produite lors de la suppression du rappel."
+      });
+    }
   };
   
   return (
@@ -39,7 +99,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
             </Button>
           </div>
           <NewPrescriptionForm 
-            onComplete={() => setIsCreatingPrescription(false)} 
+            onComplete={() => setIsCreatingPrescription(false)}
+            userId={userId}
           />
         </div>
       ) : isCreatingReminder ? (
@@ -127,10 +188,16 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
                 </Button>
               </div>
               
-              <RemindersList 
-                reminders={reminders} 
-                onDelete={handleDeleteReminder}
-              />
+              {loading ? (
+                <div className="py-4 text-center">
+                  <div className="animate-pulse">Chargement des rappels...</div>
+                </div>
+              ) : (
+                <RemindersList 
+                  reminders={reminders} 
+                  onDelete={handleDeleteReminder}
+                />
+              )}
             </TabsContent>
           </Tabs>
         </>

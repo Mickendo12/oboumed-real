@@ -5,9 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import MedicationScanner from './MedicationScanner';
+import { addDocument, COLLECTIONS } from '@/services/firestoreService';
 
 interface NewPrescriptionFormProps {
   onComplete: () => void;
+  userId: string;
 }
 
 interface Medication {
@@ -17,7 +19,17 @@ interface Medication {
   frequency: string;
 }
 
-const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete }) => {
+interface Prescription {
+  hospitalName: string;
+  doctorName: string;
+  pharmacyName: string;
+  prescriptionDate: string;
+  medications: Medication[];
+  userId: string;
+  createdAt: number;
+}
+
+const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, userId }) => {
   const [step, setStep] = useState<'details' | 'medications'>('details');
   const [hospitalName, setHospitalName] = useState('');
   const [doctorName, setDoctorName] = useState('');
@@ -26,6 +38,7 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete })
     new Date().toISOString().split('T')[0]
   );
   const [medications, setMedications] = useState<Medication[]>([]);
+  const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
   const handleDetailsSubmit = (e: React.FormEvent) => {
@@ -41,12 +54,38 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete })
     });
   };
 
-  const handleSavePrescription = () => {
-    toast({
-      title: "Ordonnance enregistrée",
-      description: "Votre ordonnance a été enregistrée avec succès.",
-    });
-    onComplete();
+  const handleSavePrescription = async () => {
+    try {
+      setSaving(true);
+      
+      const prescriptionData: Prescription = {
+        hospitalName,
+        doctorName,
+        pharmacyName,
+        prescriptionDate,
+        medications,
+        userId,
+        createdAt: Date.now()
+      };
+      
+      await addDocument(COLLECTIONS.PRESCRIPTIONS, prescriptionData);
+      
+      toast({
+        title: "Ordonnance enregistrée",
+        description: "Votre ordonnance a été enregistrée avec succès.",
+      });
+      
+      onComplete();
+    } catch (error) {
+      console.error("Error saving prescription:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Une erreur s'est produite lors de l'enregistrement de l'ordonnance."
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -152,9 +191,9 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete })
           </Button>
           <Button 
             onClick={handleSavePrescription}
-            disabled={medications.length === 0}
+            disabled={medications.length === 0 || saving}
           >
-            Enregistrer l'ordonnance
+            {saving ? "Enregistrement..." : "Enregistrer l'ordonnance"}
           </Button>
         </CardFooter>
       )}

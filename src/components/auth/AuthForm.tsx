@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { signUp, signIn, SignUpData, SignInData } from '@/services/authService';
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 type AuthMode = 'login' | 'register';
 
@@ -18,24 +21,52 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     
-    // Simulate authentication process
-    setTimeout(() => {
-      setLoading(false);
+    try {
       if (mode === 'register') {
+        const data: SignUpData = { email, password, name };
+        const userCredential = await signUp(data);
+        
         toast({
           title: "Compte créé",
           description: "Votre compte a été créé avec succès.",
         });
+        
+        onAuthenticated({ email: userCredential.user.email || email });
+      } else {
+        const data: SignInData = { email, password };
+        const userCredential = await signIn(data);
+        
+        onAuthenticated({ email: userCredential.user.email || email });
       }
-      onAuthenticated({ email });
-    }, 1000);
+    } catch (err: any) {
+      console.error('Authentication error:', err);
+      
+      // Handle Firebase auth errors
+      let errorMessage = "Une erreur s'est produite. Veuillez réessayer.";
+      
+      if (err.code === 'auth/email-already-in-use') {
+        errorMessage = "Cette adresse email est déjà utilisée.";
+      } else if (err.code === 'auth/invalid-email') {
+        errorMessage = "Adresse email invalide.";
+      } else if (err.code === 'auth/weak-password') {
+        errorMessage = "Le mot de passe est trop faible.";
+      } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+        errorMessage = "Email ou mot de passe incorrect.";
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -58,6 +89,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
         </CardHeader>
         
         <CardContent>
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'register' && (
               <div className="space-y-2">

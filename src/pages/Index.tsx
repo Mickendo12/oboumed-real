@@ -1,17 +1,61 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AuthForm from '@/components/auth/AuthForm';
 import Dashboard from '@/components/dashboard/Dashboard';
 import Logo from '@/components/Logo';
 import { LayoutDashboard } from 'lucide-react';
+import { auth } from '@/lib/firebase';
+import { logOut } from '@/services/authService';
+import { onAuthStateChanged } from 'firebase/auth';
+import { useToast } from '@/components/ui/use-toast';
 
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<{ email: string } | null>(null);
+  const [user, setUser] = useState<{ email: string; displayName?: string | null } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setLoading(false);
+      
+      if (currentUser) {
+        setIsAuthenticated(true);
+        setUser({
+          email: currentUser.email || '',
+          displayName: currentUser.displayName
+        });
+      } else {
+        setIsAuthenticated(false);
+        setUser(null);
+      }
+    });
+    
+    return () => unsubscribe();
+  }, []);
   
   const handleAuthenticated = (userData: { email: string }) => {
     setUser(userData);
     setIsAuthenticated(true);
+  };
+  
+  const handleLogout = async () => {
+    try {
+      await logOut();
+      setIsAuthenticated(false);
+      setUser(null);
+      toast({
+        title: "Déconnecté",
+        description: "Vous avez été déconnecté avec succès."
+      });
+    } catch (err) {
+      console.error('Logout error:', err);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Une erreur s'est produite lors de la déconnexion."
+      });
+    }
   };
   
   return (
@@ -27,7 +71,7 @@ const Index = () => {
             <nav className="ml-auto">
               <button 
                 className="text-sm font-medium flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-white/10 transition-colors"
-                onClick={() => setIsAuthenticated(false)}
+                onClick={handleLogout}
               >
                 <LayoutDashboard size={16} />
                 Déconnexion
@@ -38,9 +82,16 @@ const Index = () => {
       </header>
       
       <main className="container py-10">
-        {isAuthenticated && user ? (
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-pulse">Chargement...</div>
+          </div>
+        ) : isAuthenticated && user ? (
           <div className="animate-fade-in">
-            <Dashboard userName={user.email.split('@')[0]} />
+            <Dashboard 
+              userName={user.displayName || user.email.split('@')[0]} 
+              userId={auth.currentUser?.uid || ''}
+            />
           </div>
         ) : (
           <div className="max-w-md mx-auto py-12 animate-fade-in">

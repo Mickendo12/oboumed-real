@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ReminderFormProps {
-  onSave: (reminder: Reminder) => void;
+  onSave: (reminder: Omit<Reminder, "id">) => void;
   onCancel: () => void;
 }
 
@@ -53,8 +52,7 @@ const ReminderForm: React.FC<ReminderFormProps> = ({ onSave, onCancel }) => {
       return;
     }
     
-    const newReminder: Reminder = {
-      id: Date.now().toString(),
+    const newReminder = {
       title,
       medicationName,
       time,
@@ -63,10 +61,6 @@ const ReminderForm: React.FC<ReminderFormProps> = ({ onSave, onCancel }) => {
     };
     
     onSave(newReminder);
-    toast({
-      title: "Rappel créé",
-      description: `Rappel pour ${medicationName} programmé pour ${time}`,
-    });
   };
 
   const toggleDay = (day: string) => {
