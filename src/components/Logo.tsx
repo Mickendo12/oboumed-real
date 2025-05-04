@@ -10,16 +10,18 @@ const Logo: React.FC<{ size?: 'sm' | 'md' | 'lg' | 'xl' }> = ({ size = 'md' }) =
   };
 
   return (
-    <div className={`flex items-center ${sizeClasses[size]}`}>
-      <span className="font-extrabold text-white tracking-tight">
-        Obou
-      </span>
-      <span className="relative flex">
+    <div className={`flex items-center justify-center ${sizeClasses[size]}`}>
+      <div className="logo-3d">
         <span className="font-extrabold text-white tracking-tight">
-          Med
+          Obou
         </span>
-        <span className="logo-cross absolute -right-6 top-1 transform -rotate-3 text-red-500 font-bold">+</span>
-      </span>
+        <span className="relative flex">
+          <span className="font-extrabold text-white tracking-tight">
+            Med
+          </span>
+          <span className="logo-cross absolute -right-6 top-1 transform -rotate-3 text-red-500 font-bold">+</span>
+        </span>
+      </div>
     </div>
   );
 };

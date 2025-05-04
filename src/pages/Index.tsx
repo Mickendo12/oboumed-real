@@ -21,7 +21,7 @@ const Index = () => {
       <div className="light-trail light-trail-2"></div>
       
       <header className="header-container">
-        <div className="container flex h-16 items-center">
+        <div className="container flex h-16 items-center justify-center">
           <Logo />
           {isAuthenticated && (
             <nav className="ml-auto">
@@ -45,7 +45,7 @@ const Index = () => {
         ) : (
           <div className="max-w-md mx-auto py-12 animate-fade-in">
             <div className="mb-12 text-center">
-              <div className="mb-4">
+              <div className="mb-4 flex justify-center">
                 <Logo size="xl" />
               </div>
               <p className="mt-4 text-white/80">
