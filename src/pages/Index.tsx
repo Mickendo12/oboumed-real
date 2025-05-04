@@ -32,7 +32,7 @@ const Index = () => {
         <Triangle className="text-blue-100" size={40} />
       </div>
 
-      <header className="border-b border-white/10 bg-white/5 backdrop-blur-lg">
+      <header className="header-container">
         <div className="container flex h-16 items-center">
           <Logo />
           {isAuthenticated && (

@@ -112,3 +112,13 @@
     transform: translateY(0);
   }
 }
+
+/* Dark containers with reduced opacity */
+.dark-container {
+  @apply bg-black/5 backdrop-blur-md border border-white/15;
+}
+
+.header-container {
+  @apply border-b border-white/10 bg-black/5 backdrop-blur-lg;
+}
+

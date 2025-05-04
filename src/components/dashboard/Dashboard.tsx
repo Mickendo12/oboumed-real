@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import NewPrescriptionForm from '../prescriptions/NewPrescriptionForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus } from 'lucide-react';
+import { Plus, Bell } from 'lucide-react';
+import ReminderForm, { Reminder } from '../reminders/ReminderForm';
+import RemindersList from '../reminders/RemindersList';
 
 interface DashboardProps {
   userName: string;
@@ -12,10 +14,52 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
   const [isCreatingPrescription, setIsCreatingPrescription] = useState(false);
+  const [isCreatingReminder, setIsCreatingReminder] = useState(false);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  
+  const handleSaveReminder = (reminder: Reminder) => {
+    setReminders([...reminders, reminder]);
+    setIsCreatingReminder(false);
+  };
+  
+  const handleDeleteReminder = (id: string) => {
+    setReminders(reminders.filter(reminder => reminder.id !== id));
+  };
   
   return (
     <div className="container py-6 space-y-6">
-      {!isCreatingPrescription ? (
+      {isCreatingPrescription ? (
+        <div>
+          <div className="mb-6">
+            <Button 
+              variant="ghost" 
+              onClick={() => setIsCreatingPrescription(false)}
+            >
+              ← Retour au tableau de bord
+            </Button>
+          </div>
+          <NewPrescriptionForm 
+            onComplete={() => setIsCreatingPrescription(false)} 
+          />
+        </div>
+      ) : isCreatingReminder ? (
+        <div>
+          <div className="mb-6">
+            <Button 
+              variant="ghost" 
+              onClick={() => setIsCreatingReminder(false)}
+            >
+              ← Retour au tableau de bord
+            </Button>
+          </div>
+          <div className="max-w-2xl mx-auto">
+            <ReminderForm 
+              onSave={handleSaveReminder}
+              onCancel={() => setIsCreatingReminder(false)}
+            />
+          </div>
+        </div>
+      ) : (
         <>
           <div className="flex items-center justify-between">
             <div>
@@ -37,7 +81,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
             
             <TabsContent value="prescriptions">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                <Card className="cursor-pointer hover:shadow-md transition-shadow dark-container">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-lg">Centre Hospitalier</CardTitle>
                     <CardDescription>Dr. Martin - 12/04/2025</CardDescription>
@@ -49,7 +93,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
                 
                 <Button 
                   variant="outline" 
-                  className="h-[140px] border-dashed"
+                  className="h-[140px] border-dashed dark-container"
                   onClick={() => setIsCreatingPrescription(true)}
                 >
                   <Plus size={18} className="mr-2" />
@@ -59,7 +103,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
             </TabsContent>
             
             <TabsContent value="medications">
-              <Card>
+              <Card className="dark-container">
                 <CardHeader>
                   <CardTitle>Mes médicaments</CardTitle>
                   <CardDescription>
@@ -74,37 +118,22 @@ const Dashboard: React.FC<DashboardProps> = ({ userName }) => {
               </Card>
             </TabsContent>
             
-            <TabsContent value="reminders">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Mes rappels</CardTitle>
-                  <CardDescription>
-                    Rappels pour la prise de médicaments
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Vous n'avez pas encore de rappels configurés.
-                  </p>
-                </CardContent>
-              </Card>
+            <TabsContent value="reminders" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">Mes rappels</h3>
+                <Button onClick={() => setIsCreatingReminder(true)}>
+                  <Bell size={16} className="mr-2" />
+                  Ajouter un rappel
+                </Button>
+              </div>
+              
+              <RemindersList 
+                reminders={reminders} 
+                onDelete={handleDeleteReminder}
+              />
             </TabsContent>
           </Tabs>
         </>
-      ) : (
-        <div>
-          <div className="mb-6">
-            <Button 
-              variant="ghost" 
-              onClick={() => setIsCreatingPrescription(false)}
-            >
-              ← Retour au tableau de bord
-            </Button>
-          </div>
-          <NewPrescriptionForm 
-            onComplete={() => setIsCreatingPrescription(false)} 
-          />
-        </div>
       )}
     </div>
   );
