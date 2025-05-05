@@ -1,25 +1,21 @@
 
 import React, { useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { signUp, signIn, SignUpData, SignInData } from '@/services/authService';
-import { AlertCircle, Droplet, Phone, UserPlus, Pill, Stethoscope } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+import { AlertCircle } from 'lucide-react';
+import { signUp, signIn, SignUpData, SignInData } from '@/services/authService';
+import LoginForm from './LoginForm';
+import RegisterFormStep1 from './RegisterFormStep1';
+import RegisterFormStep2 from './RegisterFormStep2';
 
 type AuthMode = 'login' | 'register';
 
 interface AuthFormProps {
   onAuthenticated: (user: { email: string }) => void;
 }
-
-const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
-const relationshipTypes = ['Conjoint(e)', 'Parent', 'Enfant', 'Ami(e)', 'Autre'];
 
 const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
   const [mode, setMode] = useState<AuthMode>('login');
@@ -147,232 +143,51 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
             </Alert>
           )}
           
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {mode === 'register' && currentStep === 1 && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nom complet*</Label>
-                  <Input 
-                    id="name"
-                    type="text" 
-                    value={name} 
-                    onChange={(e) => setName(e.target.value)} 
-                    placeholder="Entrez votre nom complet" 
-                    required 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email*</Label>
-                  <Input 
-                    id="email"
-                    type="email" 
-                    value={email} 
-                    onChange={(e) => setEmail(e.target.value)} 
-                    placeholder="Entrez votre email" 
-                    required 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Mot de passe*</Label>
-                  <Input 
-                    id="password"
-                    type="password" 
-                    value={password} 
-                    onChange={(e) => setPassword(e.target.value)} 
-                    placeholder="Créez un mot de passe" 
-                    required 
-                  />
-                </div>
-                <Button 
-                  type="button" 
-                  className="w-full" 
-                  disabled={loading}
-                  onClick={handleNext}
-                >
-                  Continuer
-                </Button>
-              </>
-            )}
-
-            {mode === 'register' && currentStep === 2 && (
-              <>
-                <div className="flex items-center mb-4">
-                  <Button 
-                    type="button" 
-                    variant="ghost" 
-                    className="px-2" 
-                    onClick={handleBack}
-                  >
-                    ← Retour
-                  </Button>
-                  <h3 className="text-lg font-medium ml-2">Informations médicales</h3>
-                </div>
-
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Droplet size={16} />
-                        <Label htmlFor="bloodType">Groupe sanguin</Label>
-                      </div>
-                      <Select value={bloodType} onValueChange={setBloodType}>
-                        <SelectTrigger id="bloodType">
-                          <SelectValue placeholder="Sélectionnez" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {bloodTypes.map(type => (
-                            <SelectItem key={type} value={type}>{type}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Phone size={16} />
-                        <Label htmlFor="phoneNumber">Numéro de téléphone</Label>
-                      </div>
-                      <Input 
-                        id="phoneNumber"
-                        type="tel" 
-                        value={phoneNumber} 
-                        onChange={(e) => setPhoneNumber(e.target.value)} 
-                        placeholder="Ex: 06 12 34 56 78" 
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <UserPlus size={16} />
-                      <Label>Contact d'urgence</Label>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="emergencyName" className="text-xs">Nom et prénom</Label>
-                        <Input 
-                          id="emergencyName"
-                          placeholder="Nom de la personne"
-                          value={emergencyContactName}
-                          onChange={(e) => setEmergencyContactName(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="emergencyPhone" className="text-xs">Téléphone</Label>
-                        <Input 
-                          id="emergencyPhone"
-                          type="tel"
-                          placeholder="Numéro de téléphone"
-                          value={emergencyContactPhone}
-                          onChange={(e) => setEmergencyContactPhone(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div className="mt-2">
-                      <Label htmlFor="relationship" className="text-xs">Lien avec vous</Label>
-                      <Select 
-                        value={emergencyContactRelationship} 
-                        onValueChange={setEmergencyContactRelationship}
-                      >
-                        <SelectTrigger id="relationship">
-                          <SelectValue placeholder="Sélectionnez" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {relationshipTypes.map(type => (
-                            <SelectItem key={type} value={type}>{type}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <AlertCircle size={16} />
-                      <Label htmlFor="allergies">Allergies</Label>
-                    </div>
-                    <Textarea 
-                      id="allergies"
-                      value={allergies} 
-                      onChange={(e) => setAllergies(e.target.value)} 
-                      placeholder="Médicaments, aliments, substances..." 
-                      rows={2}
-                    />
-                  </div>
-
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Stethoscope size={16} />
-                      <Label htmlFor="chronicDiseases">Maladies chroniques</Label>
-                    </div>
-                    <Textarea 
-                      id="chronicDiseases"
-                      value={chronicDiseases} 
-                      onChange={(e) => setChronicDiseases(e.target.value)} 
-                      placeholder="Diabète, hypertension, asthme..." 
-                      rows={2}
-                    />
-                  </div>
-
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Pill size={16} />
-                      <Label htmlFor="medications">Traitements en cours</Label>
-                    </div>
-                    <Textarea 
-                      id="medications"
-                      value={medications} 
-                      onChange={(e) => setMedications(e.target.value)} 
-                      placeholder="Médicaments pris régulièrement..." 
-                      rows={2}
-                    />
-                  </div>
-                </div>
-
-                <Button 
-                  type="submit" 
-                  className="w-full mt-6" 
-                  disabled={loading}
-                >
-                  {loading ? 'Création en cours...' : "Créer mon compte"}
-                </Button>
-              </>
-            )}
-
-            {mode === 'login' && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input 
-                    id="email"
-                    type="email" 
-                    value={email} 
-                    onChange={(e) => setEmail(e.target.value)} 
-                    placeholder="Entrez votre email" 
-                    required 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Mot de passe</Label>
-                  <Input 
-                    id="password"
-                    type="password" 
-                    value={password} 
-                    onChange={(e) => setPassword(e.target.value)} 
-                    placeholder="Entrez votre mot de passe" 
-                    required 
-                  />
-                </div>
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={loading}
-                >
-                  {loading ? 'Connexion...' : 'Se connecter'}
-                </Button>
-              </>
-            )}
-          </form>
+          {mode === 'login' ? (
+            <LoginForm
+              email={email}
+              setEmail={setEmail}
+              password={password}
+              setPassword={setPassword}
+              handleSubmit={handleSubmit}
+              loading={loading}
+            />
+          ) : (
+            currentStep === 1 ? (
+              <RegisterFormStep1
+                name={name}
+                setName={setName}
+                email={email}
+                setEmail={setEmail}
+                password={password}
+                setPassword={setPassword}
+                handleNext={handleNext}
+                loading={loading}
+              />
+            ) : (
+              <RegisterFormStep2
+                bloodType={bloodType}
+                setBloodType={setBloodType}
+                phoneNumber={phoneNumber}
+                setPhoneNumber={setPhoneNumber}
+                emergencyContactName={emergencyContactName}
+                setEmergencyContactName={setEmergencyContactName}
+                emergencyContactPhone={emergencyContactPhone}
+                setEmergencyContactPhone={setEmergencyContactPhone}
+                emergencyContactRelationship={emergencyContactRelationship}
+                setEmergencyContactRelationship={setEmergencyContactRelationship}
+                allergies={allergies}
+                setAllergies={setAllergies}
+                chronicDiseases={chronicDiseases}
+                setChronicDiseases={setChronicDiseases}
+                medications={medications}
+                setMedications={setMedications}
+                handleBack={handleBack}
+                handleSubmit={handleSubmit}
+                loading={loading}
+              />
+            )
+          )}
         </CardContent>
         
         <CardFooter className="flex justify-center">
