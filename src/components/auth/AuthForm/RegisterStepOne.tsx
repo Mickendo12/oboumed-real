@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-interface RegisterFormStep1Props {
+interface RegisterStepOneProps {
   name: string;
   setName: (value: string) => void;
   email: string;
@@ -15,7 +15,7 @@ interface RegisterFormStep1Props {
   loading: boolean;
 }
 
-const RegisterFormStep1: React.FC<RegisterFormStep1Props> = ({
+const RegisterStepOne: React.FC<RegisterStepOneProps> = ({
   name,
   setName,
   email,
@@ -72,4 +72,4 @@ const RegisterFormStep1: React.FC<RegisterFormStep1Props> = ({
   );
 };
 
-export default RegisterFormStep1;
+export default RegisterStepOne;

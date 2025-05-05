@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { signUp, signIn, SignUpData, SignInData } from '@/services/authService';
-import LoginForm from './LoginForm';
-import RegisterFormStep1 from './RegisterFormStep1';
-import RegisterFormStep2 from './RegisterFormStep2';
-import PrivacyPolicyAcceptance from './PrivacyPolicyAcceptance';
+import LoginForm from '../LoginForm';
+import RegisterStepOne from './RegisterStepOne';
+import RegisterStepTwo from './RegisterStepTwo';
+import PrivacyPolicyAcceptance from '../PrivacyPolicyAcceptance';
 
 type AuthMode = 'login' | 'register';
 
@@ -170,7 +170,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
           ) : (
             currentStep === 1 ? (
               <>
-                <RegisterFormStep1
+                <RegisterStepOne
                   name={name}
                   setName={setName}
                   email={email}
@@ -187,7 +187,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
                 />
               </>
             ) : (
-              <RegisterFormStep2
+              <RegisterStepTwo
                 bloodType={bloodType}
                 setBloodType={setBloodType}
                 phoneNumber={phoneNumber}

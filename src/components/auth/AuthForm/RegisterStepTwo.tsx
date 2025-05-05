@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import EmergencyContactFields from './EmergencyContactFields';
 import MedicalInfoFields from './MedicalInfoFields';
 
-interface RegisterFormStep2Props {
+interface RegisterStepTwoProps {
   bloodType: string;
   setBloodType: (value: string) => void;
   phoneNumber: string;
@@ -26,7 +26,7 @@ interface RegisterFormStep2Props {
   loading: boolean;
 }
 
-const RegisterFormStep2: React.FC<RegisterFormStep2Props> = ({
+const RegisterStepTwo: React.FC<RegisterStepTwoProps> = ({
   bloodType,
   setBloodType,
   phoneNumber,
@@ -94,4 +94,4 @@ const RegisterFormStep2: React.FC<RegisterFormStep2Props> = ({
   );
 };
 
-export default RegisterFormStep2;
+export default RegisterStepTwo;
