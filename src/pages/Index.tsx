@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import AuthForm from '@/components/auth/AuthForm';
 import Dashboard from '@/components/dashboard/Dashboard';
 import Logo from '@/components/Logo';
+import Footer from '@/components/Footer';
 import { LayoutDashboard } from 'lucide-react';
 import { auth } from '@/lib/firebase';
 import { logOut } from '@/services/authService';
@@ -59,7 +60,7 @@ const Index = () => {
   };
   
   return (
-    <div className="min-h-screen bg-dot-pattern relative overflow-hidden">
+    <div className="min-h-screen bg-dot-pattern relative overflow-hidden flex flex-col">
       {/* Light trails inspired by the image */}
       <div className="light-trail light-trail-1"></div>
       <div className="light-trail light-trail-2"></div>
@@ -81,7 +82,7 @@ const Index = () => {
         </div>
       </header>
       
-      <main className="container py-10">
+      <main className="container py-10 flex-1">
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <div className="animate-pulse">Chargement...</div>
@@ -109,6 +110,8 @@ const Index = () => {
           </div>
         )}
       </main>
+      
+      <Footer />
     </div>
   );
 };

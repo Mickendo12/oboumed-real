@@ -10,6 +10,7 @@ import { signUp, signIn, SignUpData, SignInData } from '@/services/authService';
 import LoginForm from './LoginForm';
 import RegisterFormStep1 from './RegisterFormStep1';
 import RegisterFormStep2 from './RegisterFormStep2';
+import PrivacyPolicyAcceptance from './PrivacyPolicyAcceptance';
 
 type AuthMode = 'login' | 'register';
 
@@ -33,6 +34,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
+  const [privacyPolicyAccepted, setPrivacyPolicyAccepted] = useState(false);
   
   const { toast } = useToast();
 
@@ -42,6 +44,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
       setError("Veuillez remplir tous les champs obligatoires.");
       return;
     }
+    
+    if (!privacyPolicyAccepted) {
+      setError("Vous devez accepter la politique de confidentialité pour continuer.");
+      return;
+    }
+    
     setError(null);
     setCurrentStep(2);
   };
@@ -52,6 +60,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (mode === 'register' && !privacyPolicyAccepted) {
+      setError("Vous devez accepter la politique de confidentialité pour créer un compte.");
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     
@@ -116,6 +130,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
       <Tabs defaultValue="login" value={mode} onValueChange={(value) => {
         setMode(value as AuthMode);
         setCurrentStep(1);
+        setError(null);
       }}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="login">Connexion</TabsTrigger>
@@ -154,16 +169,23 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
             />
           ) : (
             currentStep === 1 ? (
-              <RegisterFormStep1
-                name={name}
-                setName={setName}
-                email={email}
-                setEmail={setEmail}
-                password={password}
-                setPassword={setPassword}
-                handleNext={handleNext}
-                loading={loading}
-              />
+              <>
+                <RegisterFormStep1
+                  name={name}
+                  setName={setName}
+                  email={email}
+                  setEmail={setEmail}
+                  password={password}
+                  setPassword={setPassword}
+                  handleNext={handleNext}
+                  loading={loading}
+                />
+                
+                <PrivacyPolicyAcceptance
+                  accepted={privacyPolicyAccepted}
+                  setAccepted={setPrivacyPolicyAccepted}
+                />
+              </>
             ) : (
               <RegisterFormStep2
                 bloodType={bloodType}
@@ -201,6 +223,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
               onClick={() => {
                 setMode(mode === 'login' ? 'register' : 'login');
                 setCurrentStep(1);
+                setError(null);
               }}
             >
               {mode === 'login' ? "S'inscrire" : "Se connecter"}

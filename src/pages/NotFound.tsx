@@ -1,30 +1,23 @@
 
-import { useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import React from 'react';
+import { Link } from 'react-router-dom';
+import Footer from '@/components/Footer';
 
-const NotFound = () => {
-  const location = useLocation();
-
-  useEffect(() => {
-    console.error(
-      "404 Error: User attempted to access non-existent route:",
-      location.pathname
-    );
-  }, [location.pathname]);
-
+const NotFound: React.FC = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      {/* Light trails inspired by the image */}
-      <div className="light-trail light-trail-1"></div>
-      <div className="light-trail light-trail-2"></div>
-      
-      <div className="glass-card p-8 text-center animate-fade-in">
-        <h1 className="text-6xl font-bold mb-4 text-white">404</h1>
-        <p className="text-xl text-white/80 mb-6">Page non trouvée</p>
-        <a href="/" className="text-blue-400 hover:text-blue-300 underline">
-          Retourner à l'accueil
-        </a>
+    <div className="min-h-screen bg-dot-pattern flex flex-col">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
+        <h1 className="text-4xl md:text-6xl font-bold mb-4">404</h1>
+        <p className="text-xl mb-8 text-center">La page que vous recherchez n'existe pas.</p>
+        <Link 
+          to="/" 
+          className="px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+        >
+          Retour à l'accueil
+        </Link>
       </div>
+      
+      <Footer />
     </div>
   );
 };
