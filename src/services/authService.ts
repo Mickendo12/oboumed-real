@@ -18,8 +18,11 @@ export interface SignUpData {
   emergencyContact?: {
     name?: string;
     phoneNumber?: string;
+    relationship?: string;
   };
   allergies?: string;
+  chronicDiseases?: string;
+  medications?: string;
 }
 
 export interface SignInData {
@@ -36,8 +39,11 @@ export interface UserProfile {
   emergencyContact?: {
     name?: string;
     phoneNumber?: string;
+    relationship?: string;
   };
   allergies?: string;
+  chronicDiseases?: string;
+  medications?: string;
   shareWithDoctor: boolean;
 }
 
@@ -65,6 +71,8 @@ export const signUp = async (data: SignUpData): Promise<UserCredential> => {
       phoneNumber: data.phoneNumber,
       emergencyContact: data.emergencyContact,
       allergies: data.allergies,
+      chronicDiseases: data.chronicDiseases,
+      medications: data.medications,
       shareWithDoctor: false
     };
 

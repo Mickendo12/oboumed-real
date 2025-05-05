@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -6,10 +7,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { signUp, signIn, SignUpData, SignInData } from '@/services/authService';
-import { AlertCircle, Droplet, Phone, UserPlus } from 'lucide-react';
+import { AlertCircle, Droplet, Phone, UserPlus, Pill, Stethoscope } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 type AuthMode = 'login' | 'register';
 
@@ -18,6 +19,7 @@ interface AuthFormProps {
 }
 
 const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+const relationshipTypes = ['Conjoint(e)', 'Parent', 'Enfant', 'Ami(e)', 'Autre'];
 
 const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
   const [mode, setMode] = useState<AuthMode>('login');
@@ -28,11 +30,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [emergencyContactName, setEmergencyContactName] = useState('');
   const [emergencyContactPhone, setEmergencyContactPhone] = useState('');
+  const [emergencyContactRelationship, setEmergencyContactRelationship] = useState('');
   const [allergies, setAllergies] = useState('');
+  const [chronicDiseases, setChronicDiseases] = useState('');
+  const [medications, setMedications] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
-  const [showAdditionalInfo, setShowAdditionalInfo] = useState(false);
   
   const { toast } = useToast();
 
@@ -43,11 +47,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
       return;
     }
     setError(null);
-    setShowAdditionalInfo(true);
+    setCurrentStep(2);
   };
 
   const handleBack = () => {
-    setShowAdditionalInfo(false);
+    setCurrentStep(1);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,9 +69,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
           phoneNumber,
           emergencyContact: {
             name: emergencyContactName,
-            phoneNumber: emergencyContactPhone
+            phoneNumber: emergencyContactPhone,
+            relationship: emergencyContactRelationship
           },
-          allergies
+          allergies,
+          chronicDiseases,
+          medications
         };
         
         const userCredential = await signUp(data);
@@ -112,7 +119,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
     <Card className="w-full max-w-md mx-auto animate-fade-in">
       <Tabs defaultValue="login" value={mode} onValueChange={(value) => {
         setMode(value as AuthMode);
-        setShowAdditionalInfo(false);
+        setCurrentStep(1);
       }}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="login">Connexion</TabsTrigger>
@@ -126,7 +133,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
           <CardDescription>
             {mode === 'login' 
               ? 'Entrez vos identifiants pour accéder à vos ordonnances.'
-              : 'Inscrivez-vous pour commencer à suivre vos médicaments.'}
+              : currentStep === 1 
+                ? 'Entrez vos informations personnelles pour vous inscrire.'
+                : 'Ajoutez vos informations médicales pour faciliter la prise en charge.'}
           </CardDescription>
         </CardHeader>
         
@@ -139,10 +148,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
           )}
           
           <form onSubmit={handleSubmit} className="space-y-4">
-            {mode === 'register' && !showAdditionalInfo && (
+            {mode === 'register' && currentStep === 1 && (
               <>
                 <div className="space-y-2">
-                  <label htmlFor="name" className="text-sm font-medium">Nom complet*</label>
+                  <Label htmlFor="name">Nom complet*</Label>
                   <Input 
                     id="name"
                     type="text" 
@@ -153,7 +162,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium">Email*</label>
+                  <Label htmlFor="email">Email*</Label>
                   <Input 
                     id="email"
                     type="email" 
@@ -164,7 +173,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="password" className="text-sm font-medium">Mot de passe*</label>
+                  <Label htmlFor="password">Mot de passe*</Label>
                   <Input 
                     id="password"
                     type="password" 
@@ -185,7 +194,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
               </>
             )}
 
-            {mode === 'register' && showAdditionalInfo && (
+            {mode === 'register' && currentStep === 2 && (
               <>
                 <div className="flex items-center mb-4">
                   <Button 
@@ -199,73 +208,133 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
                   <h3 className="text-lg font-medium ml-2">Informations médicales</h3>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Droplet size={16} />
-                    <label htmlFor="bloodType" className="text-sm font-medium">Groupe sanguin</label>
-                  </div>
-                  <Select value={bloodType} onValueChange={setBloodType}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionnez votre groupe sanguin" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {bloodTypes.map(type => (
-                        <SelectItem key={type} value={type}>{type}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Droplet size={16} />
+                        <Label htmlFor="bloodType">Groupe sanguin</Label>
+                      </div>
+                      <Select value={bloodType} onValueChange={setBloodType}>
+                        <SelectTrigger id="bloodType">
+                          <SelectValue placeholder="Sélectionnez" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {bloodTypes.map(type => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Phone size={16} />
-                    <label htmlFor="phoneNumber" className="text-sm font-medium">Numéro de téléphone</label>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Phone size={16} />
+                        <Label htmlFor="phoneNumber">Numéro de téléphone</Label>
+                      </div>
+                      <Input 
+                        id="phoneNumber"
+                        type="tel" 
+                        value={phoneNumber} 
+                        onChange={(e) => setPhoneNumber(e.target.value)} 
+                        placeholder="Ex: 06 12 34 56 78" 
+                      />
+                    </div>
                   </div>
-                  <Input 
-                    id="phoneNumber"
-                    type="tel" 
-                    value={phoneNumber} 
-                    onChange={(e) => setPhoneNumber(e.target.value)} 
-                    placeholder="Entrez votre numéro de téléphone" 
-                  />
-                </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <UserPlus size={16} />
-                    <label className="text-sm font-medium">Personne à contacter en cas d'urgence</label>
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <UserPlus size={16} />
+                      <Label>Contact d'urgence</Label>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="emergencyName" className="text-xs">Nom et prénom</Label>
+                        <Input 
+                          id="emergencyName"
+                          placeholder="Nom de la personne"
+                          value={emergencyContactName}
+                          onChange={(e) => setEmergencyContactName(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="emergencyPhone" className="text-xs">Téléphone</Label>
+                        <Input 
+                          id="emergencyPhone"
+                          type="tel"
+                          placeholder="Numéro de téléphone"
+                          value={emergencyContactPhone}
+                          onChange={(e) => setEmergencyContactPhone(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <Label htmlFor="relationship" className="text-xs">Lien avec vous</Label>
+                      <Select 
+                        value={emergencyContactRelationship} 
+                        onValueChange={setEmergencyContactRelationship}
+                      >
+                        <SelectTrigger id="relationship">
+                          <SelectValue placeholder="Sélectionnez" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {relationshipTypes.map(type => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <Input 
-                    placeholder="Nom de la personne à contacter"
-                    value={emergencyContactName}
-                    onChange={(e) => setEmergencyContactName(e.target.value)}
-                    className="mb-2"
-                  />
-                  <Input 
-                    type="tel"
-                    placeholder="Numéro de téléphone"
-                    value={emergencyContactPhone}
-                    onChange={(e) => setEmergencyContactPhone(e.target.value)}
-                  />
-                </div>
 
-                <div className="space-y-2">
-                  <label htmlFor="allergies" className="text-sm font-medium">Allergies</label>
-                  <Textarea 
-                    id="allergies"
-                    value={allergies} 
-                    onChange={(e) => setAllergies(e.target.value)} 
-                    placeholder="Listez vos allergies (médicaments, aliments, etc.)" 
-                    rows={3}
-                  />
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertCircle size={16} />
+                      <Label htmlFor="allergies">Allergies</Label>
+                    </div>
+                    <Textarea 
+                      id="allergies"
+                      value={allergies} 
+                      onChange={(e) => setAllergies(e.target.value)} 
+                      placeholder="Médicaments, aliments, substances..." 
+                      rows={2}
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Stethoscope size={16} />
+                      <Label htmlFor="chronicDiseases">Maladies chroniques</Label>
+                    </div>
+                    <Textarea 
+                      id="chronicDiseases"
+                      value={chronicDiseases} 
+                      onChange={(e) => setChronicDiseases(e.target.value)} 
+                      placeholder="Diabète, hypertension, asthme..." 
+                      rows={2}
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Pill size={16} />
+                      <Label htmlFor="medications">Traitements en cours</Label>
+                    </div>
+                    <Textarea 
+                      id="medications"
+                      value={medications} 
+                      onChange={(e) => setMedications(e.target.value)} 
+                      placeholder="Médicaments pris régulièrement..." 
+                      rows={2}
+                    />
+                  </div>
                 </div>
 
                 <Button 
                   type="submit" 
-                  className="w-full" 
+                  className="w-full mt-6" 
                   disabled={loading}
                 >
-                  {loading ? 'Chargement...' : "Terminer l'inscription"}
+                  {loading ? 'Création en cours...' : "Créer mon compte"}
                 </Button>
               </>
             )}
@@ -273,7 +342,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
             {mode === 'login' && (
               <>
                 <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium">Email</label>
+                  <Label htmlFor="email">Email</Label>
                   <Input 
                     id="email"
                     type="email" 
@@ -284,7 +353,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="password" className="text-sm font-medium">Mot de passe</label>
+                  <Label htmlFor="password">Mot de passe</Label>
                   <Input 
                     id="password"
                     type="password" 
@@ -299,7 +368,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
                   className="w-full" 
                   disabled={loading}
                 >
-                  {loading ? 'Chargement...' : 'Se connecter'}
+                  {loading ? 'Connexion...' : 'Se connecter'}
                 </Button>
               </>
             )}
@@ -316,7 +385,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
               className="p-0 h-auto" 
               onClick={() => {
                 setMode(mode === 'login' ? 'register' : 'login');
-                setShowAdditionalInfo(false);
+                setCurrentStep(1);
               }}
             >
               {mode === 'login' ? "S'inscrire" : "Se connecter"}
