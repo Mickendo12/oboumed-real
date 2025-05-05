@@ -21,8 +21,9 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Blood, Phone, UserPlus, Shield } from "lucide-react";
-import { UserProfile as UserProfileType, getUserProfile, updateUserProfile, toggleShareWithDoctor } from '@/services/firestoreService';
+import { Droplet, Phone, UserPlus, Shield } from 'lucide-react';
+import { getUserProfile, updateUserProfile, toggleShareWithDoctor } from '@/services/firestoreService';
+import { UserProfile as UserProfileType } from '@/services/authService';
 import { auth } from "@/lib/firebase";
 import { useToast } from '@/components/ui/use-toast';
 
@@ -31,7 +32,7 @@ interface UserProfileProps {
 }
 
 const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
-  const [profile, setProfile] = useState<UserProfileType | null>(null);
+  const [profile, setProfile] = useState<UserProfileType & {id?: string} | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSharingEnabled, setIsSharingEnabled] = useState(false);
   const { toast } = useToast();
@@ -134,7 +135,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
           <TableBody>
             <TableRow>
               <TableCell className="font-medium flex items-center">
-                <Blood className="mr-2" size={16} />
+                <Droplet className="mr-2" size={16} />
                 Groupe sanguin
               </TableCell>
               <TableCell>

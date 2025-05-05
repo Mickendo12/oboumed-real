@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { signUp, signIn, SignUpData, SignInData } from '@/services/authService';
-import { AlertCircle, Blood, Phone, UserPlus } from 'lucide-react';
+import { AlertCircle, Droplet, Phone, UserPlus } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
@@ -202,7 +201,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
 
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <Blood size={16} />
+                    <Droplet size={16} />
                     <label htmlFor="bloodType" className="text-sm font-medium">Groupe sanguin</label>
                   </div>
                   <Select value={bloodType} onValueChange={setBloodType}>
