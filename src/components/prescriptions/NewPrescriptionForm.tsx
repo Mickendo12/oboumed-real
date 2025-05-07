@@ -1,32 +1,17 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import MedicationScanner from './medication-scanner';
 import { addDocument, COLLECTIONS } from '@/services/firestoreService';
+import PrescriptionDetails from './prescription-form/PrescriptionDetails';
+import MedicationList from './prescription-form/MedicationList';
+import { Medication, Prescription } from './prescription-form/types';
 
 interface NewPrescriptionFormProps {
   onComplete: () => void;
   userId: string;
-}
-
-interface Medication {
-  id: string;
-  name: string;
-  dosage: string;
-  frequency: string;
-}
-
-interface Prescription {
-  hospitalName: string;
-  doctorName: string;
-  pharmacyName: string;
-  prescriptionDate: string;
-  medications: Medication[];
-  userId: string;
-  createdAt: number;
 }
 
 const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, userId }) => {
@@ -101,57 +86,16 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
       <CardContent>
         {step === 'details' ? (
           <form onSubmit={handleDetailsSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="hospital" className="text-sm font-medium">
-                Nom de l'hôpital
-              </label>
-              <Input
-                id="hospital" 
-                value={hospitalName}
-                onChange={(e) => setHospitalName(e.target.value)}
-                placeholder="Entrez le nom de l'hôpital"
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="doctor" className="text-sm font-medium">
-                Nom du médecin
-              </label>
-              <Input
-                id="doctor" 
-                value={doctorName}
-                onChange={(e) => setDoctorName(e.target.value)}
-                placeholder="Entrez le nom du médecin"
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="date" className="text-sm font-medium">
-                Date de l'ordonnance
-              </label>
-              <Input
-                id="date" 
-                type="date"
-                value={prescriptionDate}
-                onChange={(e) => setPrescriptionDate(e.target.value)}
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="pharmacy" className="text-sm font-medium">
-                Pharmacie
-              </label>
-              <Input
-                id="pharmacy" 
-                value={pharmacyName}
-                onChange={(e) => setPharmacyName(e.target.value)}
-                placeholder="Entrez le nom de la pharmacie"
-                required
-              />
-            </div>
+            <PrescriptionDetails 
+              hospitalName={hospitalName}
+              setHospitalName={setHospitalName}
+              doctorName={doctorName}
+              setDoctorName={setDoctorName}
+              prescriptionDate={prescriptionDate}
+              setPrescriptionDate={setPrescriptionDate}
+              pharmacyName={pharmacyName}
+              setPharmacyName={setPharmacyName}
+            />
             
             <Button type="submit" className="w-full">
               Continuer
@@ -163,22 +107,7 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
             
             <div className="space-y-4">
               <h3 className="font-medium">Médicaments ajoutés ({medications.length})</h3>
-              {medications.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Aucun médicament ajouté à cette ordonnance
-                </p>
-              ) : (
-                <ul className="space-y-2">
-                  {medications.map((med) => (
-                    <li key={med.id} className="p-3 border rounded-md bg-muted/30">
-                      <div className="font-medium">{med.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {med.dosage} - {med.frequency}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <MedicationList medications={medications} />
             </div>
           </div>
         )}
