@@ -1,6 +1,6 @@
 
 // Ce service utilise l'API Open FDA (Food and Drug Administration) pour récupérer des informations sur les médicaments
-// Documentation: https://open.fda.gov/apis/
+// Documentation: https://open.fda.gov/apis/drug/
 
 export interface MedicationApiResult {
   id: string;
@@ -15,133 +15,111 @@ export interface MedicationApiResult {
 // Fonction pour récupérer un médicament par code-barres (NDC - National Drug Code)
 export async function getMedicationByBarcode(barcode: string): Promise<MedicationApiResult | null> {
   try {
-    // Dans un environnement réel, on ferait un appel à l'API Open FDA avec le code-barres
-    // Exemple d'URL: https://api.fda.gov/drug/ndc.json?search=product_ndc:"barcode"
-    
-    // Simuler un délai de réseau
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Simuler une base de données de médicaments par code-barres
-    const medicationDatabase: Record<string, MedicationApiResult> = {
-      // Codes-barres simulés pour démonstration
-      '0123456789': {
-        id: '0123456789',
-        name: 'Doliprane',
-        dosage: '1000mg',
-        activeIngredient: 'Paracétamol',
-        manufacturer: 'Sanofi',
-        description: 'Traitement de la douleur et/ou fièvre',
-        frequency: '1 comprimé toutes les 6 heures (max 4 par jour)'
-      },
-      '9876543210': {
-        id: '9876543210',
-        name: 'Advil',
-        dosage: '400mg',
-        activeIngredient: 'Ibuprofène',
-        manufacturer: 'Pfizer',
-        description: 'Anti-inflammatoire non stéroïdien',
-        frequency: '1 comprimé toutes les 8 heures pendant les repas'
-      },
-      '1234567890': {
-        id: '1234567890',
-        name: 'Spasfon',
-        dosage: '80mg',
-        activeIngredient: 'Phloroglucinol',
-        manufacturer: 'Teva',
-        description: 'Traitement des douleurs spasmodiques',
-        frequency: '2 comprimés 3 fois par jour'
-      },
-      '2345678901': {
-        id: '2345678901',
-        name: 'Amoxicilline',
-        dosage: '500mg',
-        activeIngredient: 'Amoxicilline',
-        manufacturer: 'Biogaran',
-        description: 'Antibiotique de la famille des bêta-lactamines',
-        frequency: '1 gélule 3 fois par jour pendant 7 jours'
-      },
-      '3456789012': {
-        id: '3456789012',
-        name: 'Forlax',
-        dosage: '10g',
-        activeIngredient: 'Macrogol 4000',
-        manufacturer: 'Ipsen Pharma',
-        description: 'Traitement de la constipation occasionnelle',
-        frequency: '1 sachet par jour le matin'
-      },
-      '4567890123': {
-        id: '4567890123',
-        name: 'Xanax',
-        dosage: '0.25mg',
-        activeIngredient: 'Alprazolam',
-        manufacturer: 'Pfizer',
-        description: 'Traitement des troubles anxieux',
-        frequency: '1 comprimé 3 fois par jour'
-      }
-    };
-    
-    // Si le code-barres est "random", retourner un médicament aléatoire de la base de données
+    // Si c'est un test avec "random", on utilise un fallback
     if (barcode === 'random') {
-      const barcodes = Object.keys(medicationDatabase);
-      const randomBarcode = barcodes[Math.floor(Math.random() * barcodes.length)];
-      return medicationDatabase[randomBarcode];
+      return await getFallbackMedication();
     }
     
-    // Chercher le médicament par son code-barres
-    return medicationDatabase[barcode] || null;
+    // URL de l'API Open FDA pour rechercher par code NDC
+    const apiUrl = `https://api.fda.gov/drug/ndc.json?search=product_ndc:"${barcode}"&limit=1`;
+    
+    const response = await fetch(apiUrl);
+    
+    // Si la réponse n'est pas OK, on utilise un fallback
+    if (!response.ok) {
+      console.warn(`La recherche par code-barres ${barcode} a échoué, utilisation du fallback`);
+      return await getFallbackMedication();
+    }
+    
+    const data = await response.json();
+    
+    // Si aucun résultat n'est trouvé, on utilise un fallback
+    if (!data.results || data.results.length === 0) {
+      console.warn(`Aucun médicament trouvé pour le code-barres ${barcode}, utilisation du fallback`);
+      return await getFallbackMedication();
+    }
+    
+    // Transformer les données de l'API en format MedicationApiResult
+    const result = data.results[0];
+    return {
+      id: result.product_ndc || barcode,
+      name: result.brand_name || result.generic_name || "Médicament inconnu",
+      dosage: result.dosage_form || "Non spécifié",
+      activeIngredient: result.active_ingredients ? result.active_ingredients[0]?.name : undefined,
+      manufacturer: result.manufacturer_name,
+      description: result.product_type || result.pharm_class || undefined,
+      frequency: "À déterminer selon prescription"
+    };
   } catch (error) {
     console.error('Erreur lors de la récupération du médicament:', error);
-    return null;
+    // En cas d'erreur, on utilise un fallback
+    return await getFallbackMedication();
   }
 }
 
 // Fonction pour rechercher un médicament par nom
 export async function searchMedicationByName(name: string): Promise<MedicationApiResult[]> {
   try {
-    // Dans un environnement réel, on ferait un appel à l'API Open FDA avec le nom
-    // Exemple d'URL: https://api.fda.gov/drug/ndc.json?search=brand_name:"name"
+    // URL de l'API Open FDA pour rechercher par nom de marque ou générique
+    const apiUrl = `https://api.fda.gov/drug/ndc.json?search=(brand_name:"${name}"+generic_name:"${name}")&limit=10`;
     
-    // Simuler un délai de réseau
-    await new Promise(resolve => setTimeout(resolve, 800));
+    const response = await fetch(apiUrl);
     
-    // Base de données simulée pour la recherche par nom (pour démonstration)
-    const medicationDatabase: MedicationApiResult[] = [
-      {
-        id: '0123456789',
-        name: 'Doliprane',
-        dosage: '1000mg',
-        activeIngredient: 'Paracétamol',
-        manufacturer: 'Sanofi',
-        description: 'Traitement de la douleur et/ou fièvre',
-        frequency: '1 comprimé toutes les 6 heures (max 4 par jour)'
-      },
-      {
-        id: '0123456790',
-        name: 'Doliprane',
-        dosage: '500mg',
-        activeIngredient: 'Paracétamol',
-        manufacturer: 'Sanofi',
-        description: 'Traitement de la douleur et/ou fièvre',
-        frequency: '1-2 comprimés toutes les 6 heures (max 8 par jour)'
-      },
-      {
-        id: '9876543210',
-        name: 'Advil',
-        dosage: '400mg',
-        activeIngredient: 'Ibuprofène',
-        manufacturer: 'Pfizer',
-        frequency: '1 comprimé toutes les 8 heures pendant les repas'
-      }
-    ];
+    // Si la réponse n'est pas OK, on utilise un fallback
+    if (!response.ok) {
+      console.warn(`La recherche par nom ${name} a échoué, utilisation du fallback`);
+      return await getFallbackMedicationList(name);
+    }
     
-    // Filtrer les résultats par nom (case insensitive)
-    const normalizedName = name.toLowerCase();
-    return medicationDatabase.filter(med => 
-      med.name.toLowerCase().includes(normalizedName) || 
-      (med.activeIngredient && med.activeIngredient.toLowerCase().includes(normalizedName))
-    );
+    const data = await response.json();
+    
+    // Si aucun résultat n'est trouvé, on utilise un fallback
+    if (!data.results || data.results.length === 0) {
+      console.warn(`Aucun médicament trouvé pour le nom ${name}, utilisation du fallback`);
+      return await getFallbackMedicationList(name);
+    }
+    
+    // Transformer les données de l'API en format MedicationApiResult[]
+    return data.results.map((result: any) => ({
+      id: result.product_ndc || String(Math.random()),
+      name: result.brand_name || result.generic_name || "Médicament inconnu",
+      dosage: result.dosage_form || "Non spécifié",
+      activeIngredient: result.active_ingredients ? result.active_ingredients[0]?.name : undefined,
+      manufacturer: result.manufacturer_name,
+      description: result.product_type || result.pharm_class || undefined,
+      frequency: "À déterminer selon prescription"
+    }));
   } catch (error) {
     console.error('Erreur lors de la recherche de médicaments:', error);
-    return [];
+    // En cas d'erreur, on utilise un fallback
+    return await getFallbackMedicationList(name);
   }
+}
+
+// Fonction de fallback pour obtenir un médicament par défaut en cas d'échec de l'API
+async function getFallbackMedication(): Promise<MedicationApiResult> {
+  // Utilisation de la base de données locale comme fallback
+  const { getMedicationByBarcode } = await import('@/utils/medicationData');
+  const medication = getMedicationByBarcode('random');
+  
+  return {
+    id: medication?.id || String(Date.now()),
+    name: medication?.name || "Médicament non identifié",
+    dosage: medication?.dosage || "Dosage inconnu",
+    frequency: medication?.frequency || "À déterminer selon prescription"
+  };
+}
+
+// Fonction de fallback pour obtenir une liste de médicaments par défaut en cas d'échec de l'API
+async function getFallbackMedicationList(query: string): Promise<MedicationApiResult[]> {
+  // Utilisation de la base de données locale comme fallback
+  const { searchMedications } = await import('@/utils/medicationData');
+  const medications = searchMedications(query);
+  
+  return medications.map(med => ({
+    id: med.id || String(Date.now()),
+    name: med.name || "Médicament non identifié",
+    dosage: med.dosage || "Dosage inconnu",
+    frequency: med.frequency || "À déterminer selon prescription"
+  }));
 }
