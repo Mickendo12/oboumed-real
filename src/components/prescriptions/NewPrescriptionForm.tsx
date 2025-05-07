@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import MedicationScanner from './MedicationScanner';
+import MedicationScanner from './medication-scanner';
 import { addDocument, COLLECTIONS } from '@/services/firestoreService';
 
 interface NewPrescriptionFormProps {
