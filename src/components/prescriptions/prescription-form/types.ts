@@ -14,4 +14,5 @@ export interface Prescription {
   medications: Medication[];
   userId: string;
   createdAt: number;
+  imageUrl?: string; // URL optionnelle pour l'image de l'ordonnance
 }
