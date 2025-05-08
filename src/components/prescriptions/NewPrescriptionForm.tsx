@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
@@ -7,7 +7,8 @@ import MedicationScanner from './medication-scanner';
 import { addDocument, COLLECTIONS } from '@/services/firestoreService';
 import PrescriptionDetails from './prescription-form/PrescriptionDetails';
 import MedicationList from './prescription-form/MedicationList';
-import { Medication, Prescription } from './prescription-form/types';
+import PrescriptionScanner from './prescription-form/PrescriptionScanner';
+import { Medication, Prescription, OcrResult } from './prescription-form/types';
 
 interface NewPrescriptionFormProps {
   onComplete: () => void;
@@ -24,6 +25,7 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
   );
   const [medications, setMedications] = useState<Medication[]>([]);
   const [saving, setSaving] = useState(false);
+  const [prescriptionImage, setPrescriptionImage] = useState<string | undefined>();
   const { toast } = useToast();
 
   const handleDetailsSubmit = (e: React.FormEvent) => {
@@ -50,7 +52,8 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
         prescriptionDate,
         medications,
         userId,
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        prescriptionImage
       };
       
       await addDocument(COLLECTIONS.PRESCRIPTIONS, prescriptionData);
@@ -73,6 +76,22 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
     }
   };
 
+  const handlePrescriptionScan = (result: OcrResult, imageData: string) => {
+    // Mettre à jour les champs avec les résultats OCR
+    if (result.hospitalName) setHospitalName(result.hospitalName);
+    if (result.doctorName) setDoctorName(result.doctorName);
+    if (result.prescriptionDate) setPrescriptionDate(result.prescriptionDate);
+    
+    // Ajouter l'image de l'ordonnance
+    setPrescriptionImage(imageData);
+    
+    // Ajouter les médicaments détectés
+    setMedications(prevMeds => [...prevMeds, ...result.medications]);
+    
+    // Passer à l'étape suivante
+    setStep('medications');
+  };
+
   return (
     <Card className="w-full max-w-3xl mx-auto animate-fade-in">
       <CardHeader>
@@ -85,24 +104,39 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
       
       <CardContent>
         {step === 'details' ? (
-          <form onSubmit={handleDetailsSubmit} className="space-y-4">
-            <PrescriptionDetails 
-              hospitalName={hospitalName}
-              setHospitalName={setHospitalName}
-              doctorName={doctorName}
-              setDoctorName={setDoctorName}
-              prescriptionDate={prescriptionDate}
-              setPrescriptionDate={setPrescriptionDate}
-              pharmacyName={pharmacyName}
-              setPharmacyName={setPharmacyName}
-            />
+          <div className="space-y-6">
+            <PrescriptionScanner onScanComplete={handlePrescriptionScan} />
             
-            <Button type="submit" className="w-full">
-              Continuer
-            </Button>
-          </form>
+            <form onSubmit={handleDetailsSubmit} className="space-y-4 pt-4 border-t">
+              <PrescriptionDetails 
+                hospitalName={hospitalName}
+                setHospitalName={setHospitalName}
+                doctorName={doctorName}
+                setDoctorName={setDoctorName}
+                prescriptionDate={prescriptionDate}
+                setPrescriptionDate={setPrescriptionDate}
+                pharmacyName={pharmacyName}
+                setPharmacyName={setPharmacyName}
+              />
+              
+              <Button type="submit" className="w-full">
+                Continuer
+              </Button>
+            </form>
+          </div>
         ) : (
           <div className="space-y-6">
+            {prescriptionImage && (
+              <div className="p-2 border rounded-lg">
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">Image de l'ordonnance</h3>
+                <img 
+                  src={prescriptionImage} 
+                  alt="Ordonnance scannée" 
+                  className="w-full h-48 object-contain border rounded bg-muted/20" 
+                />
+              </div>
+            )}
+            
             <MedicationScanner onScan={handleAddMedication} />
             
             <div className="space-y-4">

@@ -14,5 +14,13 @@ export interface Prescription {
   medications: Medication[];
   userId: string;
   createdAt: number;
-  imageUrl?: string; // URL optionnelle pour l'image de l'ordonnance
+  imageUrl?: string; // URL pour l'image de l'ordonnance
+  prescriptionImage?: string; // Base64 de l'image de l'ordonnance
+}
+
+export interface OcrResult {
+  medications: Medication[];
+  hospitalName?: string;
+  doctorName?: string;
+  prescriptionDate?: string;
 }
