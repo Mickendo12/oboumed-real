@@ -1,4 +1,5 @@
 
+
 export interface Medication {
   id: string;
   name: string;
@@ -14,8 +15,9 @@ export interface Prescription {
   medications: Medication[];
   userId: string;
   createdAt: number;
-  imageUrl?: string; // URL pour l'image de l'ordonnance
-  prescriptionImage?: string; // Base64 de l'image de l'ordonnance
+  imageUrl?: string; // URL pour l'image de l'ordonnance stockée dans Firebase
+  prescriptionImage?: string; // Base64 de l'image de l'ordonnance (temporaire)
+  imageStoragePath?: string; // Chemin de stockage dans Firebase
 }
 
 export interface OcrResult {
@@ -24,3 +26,4 @@ export interface OcrResult {
   doctorName?: string;
   prescriptionDate?: string;
 }
+

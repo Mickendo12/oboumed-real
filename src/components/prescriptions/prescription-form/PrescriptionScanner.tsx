@@ -68,7 +68,7 @@ const PrescriptionScanner: React.FC<PrescriptionScannerProps> = ({ onScanComplet
     
     if (ctx && videoRef.current) {
       ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-      const imageDataUrl = canvas.toDataURL('image/jpeg');
+      const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
       setImagePreview(imageDataUrl);
       processImage(imageDataUrl);
     }
@@ -88,13 +88,13 @@ const PrescriptionScanner: React.FC<PrescriptionScannerProps> = ({ onScanComplet
     reader.readAsDataURL(file);
   };
 
-  // Simuler le traitement OCR
+  // Traiter l'image pour l'OCR (simulation améliorée)
   const processImage = (imageData: string) => {
     setIsProcessing(true);
     
-    // Simuler un délai de traitement
+    // Dans un environnement de production, on appellerait une API OCR ici
     setTimeout(() => {
-      // Simuler un résultat d'OCR
+      // Simuler un résultat d'OCR réaliste
       const mockOcrResult: OcrResult = {
         medications: [
           { 

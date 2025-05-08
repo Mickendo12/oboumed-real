@@ -9,6 +9,8 @@ import PrescriptionDetails from './prescription-form/PrescriptionDetails';
 import MedicationList from './prescription-form/MedicationList';
 import PrescriptionScanner from './prescription-form/PrescriptionScanner';
 import { Medication, Prescription, OcrResult } from './prescription-form/types';
+import { ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { storage } from '@/lib/firebase';
 
 interface NewPrescriptionFormProps {
   onComplete: () => void;
@@ -25,7 +27,10 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
   );
   const [medications, setMedications] = useState<Medication[]>([]);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [prescriptionImage, setPrescriptionImage] = useState<string | undefined>();
+  const [imageUrl, setImageUrl] = useState<string | undefined>();
+  const [imageStoragePath, setImageStoragePath] = useState<string | undefined>();
   const { toast } = useToast();
 
   const handleDetailsSubmit = (e: React.FormEvent) => {
@@ -41,9 +46,49 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
     });
   };
 
+  const uploadPrescriptionImage = async (imageData: string): Promise<{ url: string, path: string }> => {
+    if (!imageData) return { url: '', path: '' };
+    
+    setUploading(true);
+    try {
+      // Créer un chemin unique dans Firebase Storage
+      const imagePath = `prescriptions/${userId}/${Date.now()}.jpg`;
+      const storageRef = ref(storage, imagePath);
+      
+      // Convertir le base64 pour le stockage Firebase
+      const imageDataForUpload = imageData.startsWith('data:') 
+        ? imageData 
+        : `data:image/jpeg;base64,${imageData}`;
+      
+      // Téléverser l'image
+      await uploadString(storageRef, imageDataForUpload, 'data_url');
+      
+      // Obtenir l'URL de téléchargement
+      const downloadUrl = await getDownloadURL(storageRef);
+      
+      return { url: downloadUrl, path: imagePath };
+    } catch (error) {
+      console.error("Erreur lors du téléversement:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur de téléversement",
+        description: "L'image n'a pas pu être téléversée. Veuillez réessayer."
+      });
+      return { url: '', path: '' };
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSavePrescription = async () => {
     try {
       setSaving(true);
+      
+      // Téléverser l'image si présente
+      let uploadResult = { url: '', path: '' };
+      if (prescriptionImage) {
+        uploadResult = await uploadPrescriptionImage(prescriptionImage);
+      }
       
       const prescriptionData: Prescription = {
         hospitalName,
@@ -53,7 +98,9 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
         medications,
         userId,
         createdAt: Date.now(),
-        prescriptionImage
+        prescriptionImage: undefined, // Ne pas stocker le base64 dans Firestore
+        imageUrl: uploadResult.url || imageUrl,
+        imageStoragePath: uploadResult.path || imageStoragePath
       };
       
       await addDocument(COLLECTIONS.PRESCRIPTIONS, prescriptionData);
@@ -76,14 +123,25 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
     }
   };
 
-  const handlePrescriptionScan = (result: OcrResult, imageData: string) => {
+  const handlePrescriptionScan = async (result: OcrResult, imageData: string) => {
     // Mettre à jour les champs avec les résultats OCR
     if (result.hospitalName) setHospitalName(result.hospitalName);
     if (result.doctorName) setDoctorName(result.doctorName);
     if (result.prescriptionDate) setPrescriptionDate(result.prescriptionDate);
     
-    // Ajouter l'image de l'ordonnance
+    // Stocker l'image temporairement
     setPrescriptionImage(imageData);
+    
+    // Téléverser immédiatement si possible
+    try {
+      const { url, path } = await uploadPrescriptionImage(imageData);
+      if (url) {
+        setImageUrl(url);
+        setImageStoragePath(path);
+      }
+    } catch (error) {
+      console.error("Erreur lors du téléversement de l'image:", error);
+    }
     
     // Ajouter les médicaments détectés
     setMedications(prevMeds => [...prevMeds, ...result.medications]);
@@ -126,11 +184,11 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
           </div>
         ) : (
           <div className="space-y-6">
-            {prescriptionImage && (
+            {(prescriptionImage || imageUrl) && (
               <div className="p-2 border rounded-lg">
                 <h3 className="text-sm font-medium text-muted-foreground mb-2">Image de l'ordonnance</h3>
                 <img 
-                  src={prescriptionImage} 
+                  src={imageUrl || prescriptionImage} 
                   alt="Ordonnance scannée" 
                   className="w-full h-48 object-contain border rounded bg-muted/20" 
                 />
@@ -154,9 +212,9 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
           </Button>
           <Button 
             onClick={handleSavePrescription}
-            disabled={medications.length === 0 || saving}
+            disabled={medications.length === 0 || saving || uploading}
           >
-            {saving ? "Enregistrement..." : "Enregistrer l'ordonnance"}
+            {saving || uploading ? "Enregistrement..." : "Enregistrer l'ordonnance"}
           </Button>
         </CardFooter>
       )}
