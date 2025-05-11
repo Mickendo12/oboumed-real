@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import MedicationScanner from './medication-scanner';
 import { addDocument, COLLECTIONS } from '@/services/firestoreService';
 import PrescriptionDetails from './prescription-form/PrescriptionDetails';
 import MedicationList from './prescription-form/MedicationList';
@@ -11,6 +10,7 @@ import PrescriptionScanner from './prescription-form/PrescriptionScanner';
 import { Medication, Prescription, OcrResult } from './prescription-form/types';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/lib/firebase';
+import MedicationAutocomplete from './medication-autocomplete/MedicationAutocomplete';
 
 interface NewPrescriptionFormProps {
   onComplete: () => void;
@@ -195,9 +195,11 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
               </div>
             )}
             
-            <MedicationScanner onScan={handleAddMedication} />
+            <div className="border-t pt-4">
+              <MedicationAutocomplete onMedicationSelect={handleAddMedication} />
+            </div>
             
-            <div className="space-y-4">
+            <div className="space-y-4 border-t pt-4">
               <h3 className="font-medium">Médicaments ajoutés ({medications.length})</h3>
               <MedicationList medications={medications} />
             </div>

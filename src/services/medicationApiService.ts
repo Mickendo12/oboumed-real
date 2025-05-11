@@ -57,9 +57,14 @@ export async function getMedicationByBarcode(barcode: string): Promise<Medicatio
   }
 }
 
-// Fonction pour rechercher un médicament par nom
+// Fonction pour rechercher un médicament par nom avec prise en charge de l'autocomplétion
 export async function searchMedicationByName(name: string): Promise<MedicationApiResult[]> {
   try {
+    // Vérifier si la requête est vide ou trop courte
+    if (!name || name.length < 2) {
+      return [];
+    }
+
     // URL de l'API Open FDA pour rechercher par nom de marque ou générique
     const apiUrl = `https://api.fda.gov/drug/ndc.json?search=(brand_name:"${name}"+generic_name:"${name}")&limit=10`;
     
