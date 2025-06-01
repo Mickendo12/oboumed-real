@@ -41,9 +41,11 @@ const MedicationAutocomplete: React.FC<MedicationAutocompleteProps> = ({ onMedic
       setIsSearching(true);
       try {
         const results = await searchMedicationByName(searchQuery);
-        setSearchResults(results);
+        // S'assurer que results est toujours un tableau
+        setSearchResults(Array.isArray(results) ? results : []);
       } catch (error) {
         console.error('Erreur lors de la recherche:', error);
+        setSearchResults([]); // Définir un tableau vide en cas d'erreur
         toast({
           variant: "destructive",
           title: "Erreur de recherche",
@@ -93,6 +95,7 @@ const MedicationAutocomplete: React.FC<MedicationAutocompleteProps> = ({ onMedic
     setSelectedMedication(null);
     setFrequency('');
     setSearchQuery('');
+    setSearchResults([]);
   };
 
   return (
@@ -126,9 +129,13 @@ const MedicationAutocomplete: React.FC<MedicationAutocompleteProps> = ({ onMedic
                   <span className="ml-2 text-sm text-muted-foreground">Recherche...</span>
                 </div>
               )}
-              <CommandEmpty>Aucun médicament trouvé</CommandEmpty>
+              <CommandEmpty>
+                {searchQuery.length < 2 
+                  ? "Tapez au moins 2 caractères pour rechercher" 
+                  : "Aucun médicament trouvé"}
+              </CommandEmpty>
               <CommandGroup>
-                {searchResults.map((med) => (
+                {searchResults && searchResults.length > 0 && searchResults.map((med) => (
                   <CommandItem
                     key={med.id}
                     onSelect={() => handleSelectMedication(med)}
