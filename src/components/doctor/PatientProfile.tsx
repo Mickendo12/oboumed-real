@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,9 +11,9 @@ import {
   getRemindersForUser,
   logAccess,
   Profile, 
-  Medication, 
-  Reminder 
+  Medication 
 } from '@/services/supabaseService';
+import { ReminderDB } from '@/types/reminder';
 
 interface PatientProfileProps {
   patientId: string;
@@ -25,7 +24,7 @@ interface PatientProfileProps {
 const PatientProfile: React.FC<PatientProfileProps> = ({ patientId, doctorId, onBack }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [medications, setMedications] = useState<Medication[]>([]);
-  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [reminders, setReminders] = useState<ReminderDB[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 

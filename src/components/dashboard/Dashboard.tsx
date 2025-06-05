@@ -174,36 +174,47 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
             <div>
               <h1 className="text-2xl font-bold">Bonjour, {userName}</h1>
               <p className="text-muted-foreground">Bienvenue sur votre tableau de bord ObouMed</p>
-              {userRole !== 'user' && (
-                <div className="flex gap-2 mt-2">
-                  {userRole === 'admin' && (
-                    <Button 
-                      size="sm" 
-                      variant="secondary"
-                      onClick={() => setActiveView('admin')}
-                    >
-                      <Shield size={16} className="mr-2" />
-                      Administration
-                    </Button>
-                  )}
-                  {(userRole === 'doctor' || userRole === 'admin') && (
-                    <Button 
-                      size="sm" 
-                      variant="secondary"
-                      onClick={() => setActiveView('doctor')}
-                    >
-                      <Stethoscope size={16} className="mr-2" />
-                      Interface Médecin
-                    </Button>
-                  )}
-                </div>
-              )}
             </div>
-            <Button onClick={() => setIsCreatingPrescription(true)}>
-              <Plus size={18} className="mr-2" />
-              Nouvelle ordonnance
-            </Button>
+            <div className="flex items-center gap-4">
+              <Button onClick={() => setIsCreatingPrescription(true)}>
+                <Plus size={18} className="mr-2" />
+                Nouvelle ordonnance
+              </Button>
+            </div>
           </div>
+
+          {/* Boutons de rôles spéciaux - affichage proéminent */}
+          {userRole !== 'user' && (
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <h3 className="text-lg font-medium mb-3 text-blue-900 dark:text-blue-100">
+                Accès privilégiés
+              </h3>
+              <div className="flex gap-3">
+                {userRole === 'admin' && (
+                  <Button 
+                    size="lg" 
+                    variant="default"
+                    className="bg-red-600 hover:bg-red-700"
+                    onClick={() => setActiveView('admin')}
+                  >
+                    <Shield size={20} className="mr-2" />
+                    Interface Administration
+                  </Button>
+                )}
+                {(userRole === 'doctor' || userRole === 'admin') && (
+                  <Button 
+                    size="lg" 
+                    variant="default"
+                    className="bg-blue-600 hover:bg-blue-700"
+                    onClick={() => setActiveView('doctor')}
+                  >
+                    <Stethoscope size={20} className="mr-2" />
+                    Interface Médecin
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
           
           <Tabs defaultValue="prescriptions">
             <TabsList>
