@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +5,7 @@ import NewPrescriptionForm from '../prescriptions/NewPrescriptionForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Bell, UserRound, Shield, Stethoscope } from 'lucide-react';
 import ReminderForm from '../reminders/ReminderForm';
-import { type Reminder as FormReminder } from '../reminders/ReminderForm';
+import { type ReminderForm as FormReminder } from '@/types/reminder';
 import RemindersList from '../reminders/RemindersList';
 import UserProfile from './UserProfile';
 import AdminDashboard from '../admin/AdminDashboard';
@@ -183,37 +182,45 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
             </div>
           </div>
 
-          {/* Boutons de rôles spéciaux - affichage proéminent */}
-          {userRole !== 'user' && (
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-              <h3 className="text-lg font-medium mb-3 text-blue-900 dark:text-blue-100">
-                Accès privilégiés
-              </h3>
-              <div className="flex gap-3">
-                {userRole === 'admin' && (
-                  <Button 
-                    size="lg" 
-                    variant="default"
-                    className="bg-red-600 hover:bg-red-700"
-                    onClick={() => setActiveView('admin')}
-                  >
-                    <Shield size={20} className="mr-2" />
-                    Interface Administration
-                  </Button>
-                )}
-                {(userRole === 'doctor' || userRole === 'admin') && (
-                  <Button 
-                    size="lg" 
-                    variant="default"
-                    className="bg-blue-600 hover:bg-blue-700"
-                    onClick={() => setActiveView('doctor')}
-                  >
-                    <Stethoscope size={20} className="mr-2" />
-                    Interface Médecin
-                  </Button>
-                )}
-              </div>
-            </div>
+          {/* Boutons de rôles spéciaux - toujours visible quand applicable */}
+          {(userRole === 'admin' || userRole === 'doctor') && (
+            <Card className="border-2 border-blue-200 dark:border-blue-800">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg text-blue-900 dark:text-blue-100 flex items-center gap-2">
+                  <Shield size={20} />
+                  Accès privilégiés
+                </CardTitle>
+                <CardDescription>
+                  Interfaces spécialisées pour votre rôle
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-4">
+                  {userRole === 'admin' && (
+                    <Button 
+                      size="lg" 
+                      variant="default"
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      onClick={() => setActiveView('admin')}
+                    >
+                      <Shield size={20} className="mr-2" />
+                      Interface Administration
+                    </Button>
+                  )}
+                  {(userRole === 'doctor' || userRole === 'admin') && (
+                    <Button 
+                      size="lg" 
+                      variant="default"
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      onClick={() => setActiveView('doctor')}
+                    >
+                      <Stethoscope size={20} className="mr-2" />
+                      Interface Médecin
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           )}
           
           <Tabs defaultValue="prescriptions">
