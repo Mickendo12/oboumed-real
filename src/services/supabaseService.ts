@@ -1,5 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
+import { ReminderDB, ReminderInput } from '@/types/reminder';
 
 export interface Profile {
   id: string;
@@ -32,18 +32,6 @@ export interface Medication {
   end_date?: string;
   doctor_prescribed?: string;
   prescription_id?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Reminder {
-  id: string;
-  user_id: string;
-  medication_name: string;
-  dosage: string;
-  frequency: string;
-  time: string;
-  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -151,7 +139,7 @@ export const addMedication = async (medication: Omit<Medication, 'id' | 'created
 };
 
 // Reminder functions
-export const getRemindersForUser = async (userId: string): Promise<Reminder[]> => {
+export const getRemindersForUser = async (userId: string): Promise<ReminderDB[]> => {
   const { data, error } = await supabase
     .from('reminders')
     .select('*')
@@ -165,7 +153,7 @@ export const getRemindersForUser = async (userId: string): Promise<Reminder[]> =
   return data || [];
 };
 
-export const addReminder = async (reminder: Omit<Reminder, 'id' | 'created_at' | 'updated_at'>): Promise<Reminder> => {
+export const addReminder = async (reminder: ReminderInput): Promise<ReminderDB> => {
   const { data, error } = await supabase
     .from('reminders')
     .insert(reminder)
@@ -313,7 +301,10 @@ export const getAccessLogs = async (): Promise<AccessLog[]> => {
     throw error;
   }
   
-  return data || [];
+  return (data || []).map(log => ({
+    ...log,
+    ip_address: log.ip_address ? String(log.ip_address) : undefined
+  })) as AccessLog[];
 };
 
 // Admin functions

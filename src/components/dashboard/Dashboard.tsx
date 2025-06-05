@@ -5,12 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import NewPrescriptionForm from '../prescriptions/NewPrescriptionForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Bell, UserRound, Shield, Stethoscope } from 'lucide-react';
-import ReminderForm, { Reminder } from '../reminders/ReminderForm';
+import ReminderForm from '../reminders/ReminderForm';
+import { type Reminder as FormReminder } from '../reminders/ReminderForm';
 import RemindersList from '../reminders/RemindersList';
 import UserProfile from './UserProfile';
 import AdminDashboard from '../admin/AdminDashboard';
 import DoctorDashboard from '../doctor/DoctorDashboard';
 import { getRemindersForUser, addReminder, deleteReminder, getUserProfile } from '@/services/supabaseService';
+import { convertDBReminderToForm, convertFormReminderToDB } from '@/services/reminderService';
 import { useToast } from '@/components/ui/use-toast';
 
 interface DashboardProps {
@@ -21,7 +23,7 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
   const [isCreatingPrescription, setIsCreatingPrescription] = useState(false);
   const [isCreatingReminder, setIsCreatingReminder] = useState(false);
-  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [reminders, setReminders] = useState<FormReminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<'user' | 'doctor' | 'admin'>('user');
   const [activeView, setActiveView] = useState<'dashboard' | 'admin' | 'doctor'>('dashboard');
@@ -42,7 +44,10 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
         if (profile) {
           setUserRole(profile.role);
         }
-        setReminders(userReminders);
+        
+        // Convert DB reminders to form reminders
+        const formReminders = userReminders.map(convertDBReminderToForm);
+        setReminders(formReminders);
       } catch (error) {
         console.error("Error fetching user data:", error);
         toast({
@@ -58,19 +63,18 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
     fetchUserData();
   }, [userId, toast]);
   
-  const handleSaveReminder = async (reminder: Omit<Reminder, "id" | 'created_at' | 'updated_at'>) => {
+  const handleSaveReminder = async (reminder: Omit<FormReminder, "id">) => {
     try {
-      const newReminder = await addReminder({
-        ...reminder,
-        user_id: userId
-      });
+      const dbReminderInput = convertFormReminderToDB(reminder, userId);
+      const newDBReminder = await addReminder(dbReminderInput);
+      const newFormReminder = convertDBReminderToForm(newDBReminder);
       
-      setReminders([...reminders, newReminder]);
+      setReminders([...reminders, newFormReminder]);
       setIsCreatingReminder(false);
       
       toast({
         title: "Rappel ajouté",
-        description: `Rappel pour ${reminder.medication_name} créé avec succès.`
+        description: `Rappel pour ${reminder.medicationName} créé avec succès.`
       });
     } catch (error) {
       console.error("Error saving reminder:", error);

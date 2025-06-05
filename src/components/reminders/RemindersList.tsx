@@ -5,7 +5,7 @@ import { Bell, Clock, Calendar, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { type Reminder } from './ReminderForm';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 
 interface RemindersListProps {
   reminders: Reminder[];
