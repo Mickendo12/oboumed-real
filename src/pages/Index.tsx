@@ -5,38 +5,54 @@ import Dashboard from '@/components/dashboard/Dashboard';
 import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
 import { LayoutDashboard } from 'lucide-react';
-import { auth } from '@/lib/firebase';
+import { supabase } from '@/integrations/supabase/client';
 import { logOut } from '@/services/authService';
-import { onAuthStateChanged } from 'firebase/auth';
 import { useToast } from '@/components/ui/use-toast';
 
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<{ email: string; displayName?: string | null } | null>(null);
+  const [user, setUser] = useState<{ email: string; displayName?: string | null; id: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setLoading(false);
       
-      if (currentUser) {
+      if (session?.user) {
         setIsAuthenticated(true);
         setUser({
-          email: currentUser.email || '',
-          displayName: currentUser.displayName
+          email: session.user.email || '',
+          displayName: session.user.user_metadata?.name || null,
+          id: session.user.id
         });
       } else {
         setIsAuthenticated(false);
         setUser(null);
       }
     });
-    
-    return () => unsubscribe();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setIsAuthenticated(true);
+        setUser({
+          email: session.user.email || '',
+          displayName: session.user.user_metadata?.name || null,
+          id: session.user.id
+        });
+      } else {
+        setIsAuthenticated(false);
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
   
   const handleAuthenticated = (userData: { email: string }) => {
-    setUser(userData);
+    setUser({ ...userData, displayName: null, id: '' });
     setIsAuthenticated(true);
   };
   
@@ -91,7 +107,7 @@ const Index = () => {
           <div className="animate-fade-in">
             <Dashboard 
               userName={user.displayName || user.email.split('@')[0]} 
-              userId={auth.currentUser?.uid || ''}
+              userId={user.id}
             />
           </div>
         ) : (

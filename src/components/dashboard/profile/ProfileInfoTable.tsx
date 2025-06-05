@@ -8,10 +8,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Droplet, Phone, UserPlus, Shield, Stethoscope, Pill } from 'lucide-react';
-import { UserProfile } from '@/services/authService';
+import { Profile } from '@/services/supabaseService';
 
 interface ProfileInfoTableProps {
-  profile: UserProfile | null;
+  profile: Profile | null;
 }
 
 const ProfileInfoTable: React.FC<ProfileInfoTableProps> = ({ profile }) => {
@@ -24,8 +24,8 @@ const ProfileInfoTable: React.FC<ProfileInfoTableProps> = ({ profile }) => {
             Groupe sanguin
           </TableCell>
           <TableCell>
-            {profile?.bloodType ? (
-              <Badge variant="outline">{profile.bloodType}</Badge>
+            {profile?.blood_type ? (
+              <Badge variant="outline">{profile.blood_type}</Badge>
             ) : (
               <span className="text-muted-foreground text-sm">Non renseigné</span>
             )}
@@ -37,7 +37,7 @@ const ProfileInfoTable: React.FC<ProfileInfoTableProps> = ({ profile }) => {
             Téléphone
           </TableCell>
           <TableCell>
-            {profile?.phoneNumber || <span className="text-muted-foreground text-sm">Non renseigné</span>}
+            {profile?.phone_number || <span className="text-muted-foreground text-sm">Non renseigné</span>}
           </TableCell>
         </TableRow>
         <TableRow>
@@ -46,12 +46,12 @@ const ProfileInfoTable: React.FC<ProfileInfoTableProps> = ({ profile }) => {
             Contact d'urgence
           </TableCell>
           <TableCell>
-            {profile?.emergencyContact?.name ? (
+            {profile?.emergency_contact_name ? (
               <div>
-                <div>{profile.emergencyContact.name}</div>
-                <div className="text-sm text-muted-foreground">{profile.emergencyContact.phoneNumber}</div>
-                {profile.emergencyContact.relationship && (
-                  <div className="text-xs text-muted-foreground">({profile.emergencyContact.relationship})</div>
+                <div>{profile.emergency_contact_name}</div>
+                <div className="text-sm text-muted-foreground">{profile.emergency_contact_phone}</div>
+                {profile.emergency_contact_relationship && (
+                  <div className="text-xs text-muted-foreground">({profile.emergency_contact_relationship})</div>
                 )}
               </div>
             ) : (
@@ -78,8 +78,8 @@ const ProfileInfoTable: React.FC<ProfileInfoTableProps> = ({ profile }) => {
             Maladies chroniques
           </TableCell>
           <TableCell>
-            {profile?.chronicDiseases ? (
-              <div className="whitespace-pre-wrap">{profile.chronicDiseases}</div>
+            {profile?.chronic_diseases ? (
+              <div className="whitespace-pre-wrap">{profile.chronic_diseases}</div>
             ) : (
               <span className="text-muted-foreground text-sm">Non renseigné</span>
             )}
@@ -91,8 +91,8 @@ const ProfileInfoTable: React.FC<ProfileInfoTableProps> = ({ profile }) => {
             Traitements en cours
           </TableCell>
           <TableCell>
-            {profile?.medications ? (
-              <div className="whitespace-pre-wrap">{profile.medications}</div>
+            {profile?.current_medications ? (
+              <div className="whitespace-pre-wrap">{profile.current_medications}</div>
             ) : (
               <span className="text-muted-foreground text-sm">Non renseigné</span>
             )}

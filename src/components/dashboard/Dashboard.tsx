@@ -4,11 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import NewPrescriptionForm from '../prescriptions/NewPrescriptionForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Bell, UserRound } from 'lucide-react';
+import { Plus, Bell, UserRound, Shield, Stethoscope } from 'lucide-react';
 import ReminderForm, { Reminder } from '../reminders/ReminderForm';
 import RemindersList from '../reminders/RemindersList';
 import UserProfile from './UserProfile';
-import { getRemindersForUser, addReminder, deleteReminder } from '@/services/firestoreService';
+import AdminDashboard from '../admin/AdminDashboard';
+import DoctorDashboard from '../doctor/DoctorDashboard';
+import { getRemindersForUser, addReminder, deleteReminder, getUserProfile } from '@/services/supabaseService';
 import { useToast } from '@/components/ui/use-toast';
 
 interface DashboardProps {
@@ -21,47 +23,54 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
   const [isCreatingReminder, setIsCreatingReminder] = useState(false);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<'user' | 'doctor' | 'admin'>('user');
+  const [activeView, setActiveView] = useState<'dashboard' | 'admin' | 'doctor'>('dashboard');
   const { toast } = useToast();
   
-  // Load reminders from Firestore
+  // Load user profile and reminders
   useEffect(() => {
-    const fetchReminders = async () => {
+    const fetchUserData = async () => {
       try {
         if (!userId) return;
         
         setLoading(true);
-        const userReminders = await getRemindersForUser(userId);
+        const [profile, userReminders] = await Promise.all([
+          getUserProfile(userId),
+          getRemindersForUser(userId)
+        ]);
+        
+        if (profile) {
+          setUserRole(profile.role);
+        }
         setReminders(userReminders);
       } catch (error) {
-        console.error("Error fetching reminders:", error);
+        console.error("Error fetching user data:", error);
         toast({
           variant: "destructive",
           title: "Erreur",
-          description: "Impossible de charger vos rappels."
+          description: "Impossible de charger vos données."
         });
       } finally {
         setLoading(false);
       }
     };
     
-    fetchReminders();
+    fetchUserData();
   }, [userId, toast]);
   
-  const handleSaveReminder = async (reminder: Omit<Reminder, "id">) => {
+  const handleSaveReminder = async (reminder: Omit<Reminder, "id" | 'created_at' | 'updated_at'>) => {
     try {
-      const docRef = await addReminder(reminder, userId);
-      
-      const newReminder: Reminder = {
+      const newReminder = await addReminder({
         ...reminder,
-        id: docRef.id
-      };
+        user_id: userId
+      });
       
       setReminders([...reminders, newReminder]);
       setIsCreatingReminder(false);
       
       toast({
         title: "Rappel ajouté",
-        description: `Rappel pour ${reminder.medicationName} créé avec succès.`
+        description: `Rappel pour ${reminder.medication_name} créé avec succès.`
       });
     } catch (error) {
       console.error("Error saving reminder:", error);
@@ -86,6 +95,40 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
       });
     }
   };
+
+  // Show admin dashboard
+  if (activeView === 'admin' && userRole === 'admin') {
+    return (
+      <div>
+        <div className="mb-6">
+          <Button 
+            variant="ghost" 
+            onClick={() => setActiveView('dashboard')}
+          >
+            ← Retour au tableau de bord
+          </Button>
+        </div>
+        <AdminDashboard />
+      </div>
+    );
+  }
+
+  // Show doctor dashboard
+  if (activeView === 'doctor' && (userRole === 'doctor' || userRole === 'admin')) {
+    return (
+      <div>
+        <div className="mb-6">
+          <Button 
+            variant="ghost" 
+            onClick={() => setActiveView('dashboard')}
+          >
+            ← Retour au tableau de bord
+          </Button>
+        </div>
+        <DoctorDashboard userId={userId} />
+      </div>
+    );
+  }
   
   return (
     <div className="container py-6 space-y-6">
@@ -127,6 +170,30 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
             <div>
               <h1 className="text-2xl font-bold">Bonjour, {userName}</h1>
               <p className="text-muted-foreground">Bienvenue sur votre tableau de bord ObouMed</p>
+              {userRole !== 'user' && (
+                <div className="flex gap-2 mt-2">
+                  {userRole === 'admin' && (
+                    <Button 
+                      size="sm" 
+                      variant="secondary"
+                      onClick={() => setActiveView('admin')}
+                    >
+                      <Shield size={16} className="mr-2" />
+                      Administration
+                    </Button>
+                  )}
+                  {(userRole === 'doctor' || userRole === 'admin') && (
+                    <Button 
+                      size="sm" 
+                      variant="secondary"
+                      onClick={() => setActiveView('doctor')}
+                    >
+                      <Stethoscope size={16} className="mr-2" />
+                      Interface Médecin
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
             <Button onClick={() => setIsCreatingPrescription(true)}>
               <Plus size={18} className="mr-2" />

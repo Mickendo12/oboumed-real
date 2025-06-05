@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { getUserProfile, toggleShareWithDoctor } from '@/services/firestoreService';
-import { UserProfile as UserProfileType } from '@/services/authService';
+import { getUserProfile, updateUserProfile } from '@/services/supabaseService';
+import { Profile } from '@/services/supabaseService';
 import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import ProfileHeader from './profile/ProfileHeader';
@@ -14,7 +14,7 @@ interface UserProfileProps {
 }
 
 const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
-  const [profile, setProfile] = useState<UserProfileType & {id?: string} | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSharingEnabled, setIsSharingEnabled] = useState(false);
   const { toast } = useToast();
@@ -26,7 +26,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
         
         const userProfile = await getUserProfile(userId);
         setProfile(userProfile);
-        setIsSharingEnabled(userProfile?.shareWithDoctor || false);
+        setIsSharingEnabled(userProfile?.share_with_doctor || false);
       } catch (error) {
         console.error("Error fetching user profile:", error);
         toast({
@@ -44,10 +44,12 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
 
   const handleToggleSharing = async () => {
     try {
-      if (!profile?.id) return;
+      if (!profile?.user_id) return;
       
       const newSharingState = !isSharingEnabled;
-      await toggleShareWithDoctor(profile.id, newSharingState);
+      await updateUserProfile(profile.user_id, {
+        share_with_doctor: newSharingState
+      });
       
       setIsSharingEnabled(newSharingState);
       toast({

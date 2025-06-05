@@ -9,16 +9,398 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      access_logs: {
+        Row: {
+          action: string
+          admin_id: string | null
+          created_at: string | null
+          details: Json | null
+          doctor_id: string | null
+          id: string
+          ip_address: unknown | null
+          patient_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          doctor_id?: string | null
+          id?: string
+          ip_address?: unknown | null
+          patient_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          doctor_id?: string | null
+          id?: string
+          ip_address?: unknown | null
+          patient_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_logs_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "access_logs_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "access_logs_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      doctor_access_sessions: {
+        Row: {
+          access_granted_at: string | null
+          created_at: string | null
+          doctor_id: string
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          patient_id: string
+          qr_code_id: string | null
+        }
+        Insert: {
+          access_granted_at?: string | null
+          created_at?: string | null
+          doctor_id: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          patient_id: string
+          qr_code_id?: string | null
+        }
+        Update: {
+          access_granted_at?: string | null
+          created_at?: string | null
+          doctor_id?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          patient_id?: string
+          qr_code_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctor_access_sessions_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "doctor_access_sessions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "doctor_access_sessions_qr_code_id_fkey"
+            columns: ["qr_code_id"]
+            isOneToOne: false
+            referencedRelation: "qr_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medications: {
+        Row: {
+          created_at: string | null
+          doctor_prescribed: string | null
+          dosage: string
+          end_date: string | null
+          frequency: string
+          id: string
+          name: string
+          prescription_id: string | null
+          start_date: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          doctor_prescribed?: string | null
+          dosage: string
+          end_date?: string | null
+          frequency: string
+          id?: string
+          name: string
+          prescription_id?: string | null
+          start_date?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          doctor_prescribed?: string | null
+          dosage?: string
+          end_date?: string | null
+          frequency?: string
+          id?: string
+          name?: string
+          prescription_id?: string | null
+          start_date?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      prescriptions: {
+        Row: {
+          created_at: string | null
+          doctor_name: string | null
+          hospital_name: string | null
+          id: string
+          image_storage_path: string | null
+          image_url: string | null
+          pharmacy_name: string | null
+          prescription_date: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          doctor_name?: string | null
+          hospital_name?: string | null
+          id?: string
+          image_storage_path?: string | null
+          image_url?: string | null
+          pharmacy_name?: string | null
+          prescription_date?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          doctor_name?: string | null
+          hospital_name?: string | null
+          id?: string
+          image_storage_path?: string | null
+          image_url?: string | null
+          pharmacy_name?: string | null
+          prescription_date?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          access_status: Database["public"]["Enums"]["access_status"] | null
+          allergies: string | null
+          blood_type: string | null
+          chronic_diseases: string | null
+          created_at: string | null
+          current_medications: string | null
+          doctor_access_key: string | null
+          email: string
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          emergency_contact_relationship: string | null
+          id: string
+          name: string | null
+          phone_number: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          share_with_doctor: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_status?: Database["public"]["Enums"]["access_status"] | null
+          allergies?: string | null
+          blood_type?: string | null
+          chronic_diseases?: string | null
+          created_at?: string | null
+          current_medications?: string | null
+          doctor_access_key?: string | null
+          email: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
+          id?: string
+          name?: string | null
+          phone_number?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          share_with_doctor?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_status?: Database["public"]["Enums"]["access_status"] | null
+          allergies?: string | null
+          blood_type?: string | null
+          chronic_diseases?: string | null
+          created_at?: string | null
+          current_medications?: string | null
+          doctor_access_key?: string | null
+          email?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
+          id?: string
+          name?: string | null
+          phone_number?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          share_with_doctor?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      qr_codes: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          qr_code: string
+          status: Database["public"]["Enums"]["qr_status"] | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          qr_code: string
+          status?: Database["public"]["Enums"]["qr_status"] | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          qr_code?: string
+          status?: Database["public"]["Enums"]["qr_status"] | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_codes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "qr_codes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      reminders: {
+        Row: {
+          created_at: string | null
+          dosage: string
+          frequency: string
+          id: string
+          is_active: boolean | null
+          medication_name: string
+          time: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          dosage: string
+          frequency: string
+          id?: string
+          is_active?: boolean | null
+          medication_name: string
+          time: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          dosage?: string
+          frequency?: string
+          id?: string
+          is_active?: boolean | null
+          medication_name?: string
+          time?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_expired_sessions: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      generate_qr_code: {
+        Args: { patient_user_id: string }
+        Returns: string
+      }
+      get_user_role: {
+        Args: { user_uuid: string }
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
+      is_admin: {
+        Args: { user_uuid: string }
+        Returns: boolean
+      }
+      is_doctor: {
+        Args: { user_uuid: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      access_status: "active" | "restricted" | "expired"
+      qr_status: "active" | "expired" | "used"
+      user_role: "user" | "doctor" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +515,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      access_status: ["active", "restricted", "expired"],
+      qr_status: ["active", "expired", "used"],
+      user_role: ["user", "doctor", "admin"],
+    },
   },
 } as const
