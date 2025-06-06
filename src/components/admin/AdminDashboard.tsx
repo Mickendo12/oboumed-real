@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,11 +6,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Users, Shield, Activity, QrCode } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import QRCodeGenerator from './QRCodeGenerator';
 import { 
   getAllProfiles, 
   getAccessLogs, 
   updateUserAccessStatus, 
-  generateQRCodeForUser,
   generateDoctorAccessKey,
   Profile, 
   AccessLog 
@@ -21,6 +20,7 @@ const AdminDashboard: React.FC = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [accessLogs, setAccessLogs] = useState<AccessLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedUserForQR, setSelectedUserForQR] = useState<Profile | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -63,23 +63,6 @@ const AdminDashboard: React.FC = () => {
         variant: "destructive",
         title: "Erreur",
         description: "Impossible de mettre à jour le statut d'accès."
-      });
-    }
-  };
-
-  const handleGenerateQR = async (userId: string) => {
-    try {
-      await generateQRCodeForUser(userId);
-      toast({
-        title: "Code QR généré",
-        description: "Un nouveau code QR a été généré pour cet utilisateur."
-      });
-    } catch (error) {
-      console.error('Error generating QR code:', error);
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Impossible de générer le code QR."
       });
     }
   };
@@ -196,7 +179,7 @@ const AdminDashboard: React.FC = () => {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleGenerateQR(profile.user_id)}
+                            onClick={() => setSelectedUserForQR(profile)}
                           >
                             <QrCode size={16} className="mr-1" />
                             QR
@@ -263,6 +246,16 @@ const AdminDashboard: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {selectedUserForQR && (
+        <QRCodeGenerator
+          userId={selectedUserForQR.user_id}
+          userName={selectedUserForQR.name || ''}
+          userEmail={selectedUserForQR.email}
+          isOpen={!!selectedUserForQR}
+          onClose={() => setSelectedUserForQR(null)}
+        />
+      )}
     </div>
   );
 };
