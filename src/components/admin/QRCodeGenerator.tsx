@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { QrCode, Download, User } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import QRCode from 'qrcode';
+import * as QRCode from 'qrcode';
 import { generateQRCodeForUser } from '@/services/supabaseService';
 
 interface QRCodeGeneratorProps {
