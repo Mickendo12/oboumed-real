@@ -84,7 +84,8 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
         uploadResult = await uploadPrescriptionImage(prescriptionImage);
       }
       
-      const prescriptionData: Prescription = {
+      // Créer l'objet de données en excluant les champs undefined
+      const prescriptionData: Partial<Prescription> = {
         hospitalName,
         doctorName,
         pharmacyName,
@@ -92,10 +93,16 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
         medications,
         userId,
         createdAt: Date.now(),
-        prescriptionImage: undefined,
-        imageUrl: uploadResult.url || imageUrl,
-        imageStoragePath: uploadResult.path || imageStoragePath
       };
+
+      // Ajouter conditionnellement les champs optionnels seulement s'ils ont des valeurs
+      if (uploadResult.url || imageUrl) {
+        prescriptionData.imageUrl = uploadResult.url || imageUrl;
+      }
+      
+      if (uploadResult.path || imageStoragePath) {
+        prescriptionData.imageStoragePath = uploadResult.path || imageStoragePath;
+      }
       
       await addDocument(COLLECTIONS.PRESCRIPTIONS, prescriptionData);
       
