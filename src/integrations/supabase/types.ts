@@ -124,41 +124,50 @@ export type Database = {
       }
       medications: {
         Row: {
+          comments: string | null
           created_at: string | null
           doctor_prescribed: string | null
-          dosage: string
+          dosage: string | null
           end_date: string | null
-          frequency: string
+          frequency: string | null
           id: string
           name: string
+          posology: string | null
           prescription_id: string | null
           start_date: string | null
+          treatment_duration: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          comments?: string | null
           created_at?: string | null
           doctor_prescribed?: string | null
-          dosage: string
+          dosage?: string | null
           end_date?: string | null
-          frequency: string
+          frequency?: string | null
           id?: string
           name: string
+          posology?: string | null
           prescription_id?: string | null
           start_date?: string | null
+          treatment_duration?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          comments?: string | null
           created_at?: string | null
           doctor_prescribed?: string | null
-          dosage?: string
+          dosage?: string | null
           end_date?: string | null
-          frequency?: string
+          frequency?: string | null
           id?: string
           name?: string
+          posology?: string | null
           prescription_id?: string | null
           start_date?: string | null
+          treatment_duration?: string | null
           updated_at?: string | null
           user_id?: string
         }

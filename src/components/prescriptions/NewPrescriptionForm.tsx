@@ -7,10 +7,10 @@ import { addDocument, COLLECTIONS } from '@/services/firestoreService';
 import PrescriptionDetails from './prescription-form/PrescriptionDetails';
 import MedicationList from './prescription-form/MedicationList';
 import PrescriptionScanner from './prescription-form/PrescriptionScanner';
+import MedicationDetailsForm from './medication-form/MedicationDetailsForm';
 import { Medication, Prescription, OcrResult } from './prescription-form/types';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/lib/firebase';
-import MedicationAutocomplete from './medication-autocomplete/MedicationAutocomplete';
 
 interface NewPrescriptionFormProps {
   onComplete: () => void;
@@ -51,19 +51,14 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
     
     setUploading(true);
     try {
-      // Créer un chemin unique dans Firebase Storage
       const imagePath = `prescriptions/${userId}/${Date.now()}.jpg`;
       const storageRef = ref(storage, imagePath);
       
-      // Convertir le base64 pour le stockage Firebase
       const imageDataForUpload = imageData.startsWith('data:') 
         ? imageData 
         : `data:image/jpeg;base64,${imageData}`;
       
-      // Téléverser l'image
       await uploadString(storageRef, imageDataForUpload, 'data_url');
-      
-      // Obtenir l'URL de téléchargement
       const downloadUrl = await getDownloadURL(storageRef);
       
       return { url: downloadUrl, path: imagePath };
@@ -84,7 +79,6 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
     try {
       setSaving(true);
       
-      // Téléverser l'image si présente
       let uploadResult = { url: '', path: '' };
       if (prescriptionImage) {
         uploadResult = await uploadPrescriptionImage(prescriptionImage);
@@ -98,7 +92,7 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
         medications,
         userId,
         createdAt: Date.now(),
-        prescriptionImage: undefined, // Ne pas stocker le base64 dans Firestore
+        prescriptionImage: undefined,
         imageUrl: uploadResult.url || imageUrl,
         imageStoragePath: uploadResult.path || imageStoragePath
       };
@@ -124,15 +118,12 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
   };
 
   const handlePrescriptionScan = async (result: OcrResult, imageData: string) => {
-    // Mettre à jour les champs avec les résultats OCR
     if (result.hospitalName) setHospitalName(result.hospitalName);
     if (result.doctorName) setDoctorName(result.doctorName);
     if (result.prescriptionDate) setPrescriptionDate(result.prescriptionDate);
     
-    // Stocker l'image temporairement
     setPrescriptionImage(imageData);
     
-    // Téléverser immédiatement si possible
     try {
       const { url, path } = await uploadPrescriptionImage(imageData);
       if (url) {
@@ -143,15 +134,12 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
       console.error("Erreur lors du téléversement de l'image:", error);
     }
     
-    // Ajouter les médicaments détectés
     setMedications(prevMeds => [...prevMeds, ...result.medications]);
-    
-    // Passer à l'étape suivante
     setStep('medications');
   };
 
   return (
-    <Card className="w-full max-w-3xl mx-auto animate-fade-in">
+    <Card className="w-full max-w-4xl mx-auto animate-fade-in">
       <CardHeader>
         <CardTitle>
           {step === 'details' 
@@ -195,9 +183,7 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
               </div>
             )}
             
-            <div className="border-t pt-4">
-              <MedicationAutocomplete onMedicationSelect={handleAddMedication} />
-            </div>
+            <MedicationDetailsForm onAddMedication={handleAddMedication} />
             
             <div className="space-y-4 border-t pt-4">
               <h3 className="font-medium">Médicaments ajoutés ({medications.length})</h3>
