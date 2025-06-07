@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import NewPrescriptionForm from '../prescriptions/NewPrescriptionForm';
+import PrescriptionsList from '../prescriptions/PrescriptionsList';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Bell, UserRound, Shield, Stethoscope } from 'lucide-react';
 import ReminderForm from '../reminders/ReminderForm';
@@ -13,6 +14,7 @@ import DoctorDashboard from '../doctor/DoctorDashboard';
 import { getRemindersForUser, addReminder, deleteReminder, getUserProfile } from '@/services/supabaseService';
 import { convertDBReminderToForm, convertFormReminderToDB } from '@/services/reminderService';
 import { useToast } from '@/components/ui/use-toast';
+import { initializeNotifications, scheduleReminderNotification } from '@/services/notificationService';
 
 interface DashboardProps {
   userName: string;
@@ -26,6 +28,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<'user' | 'doctor' | 'admin'>('user');
   const [activeView, setActiveView] = useState<'dashboard' | 'admin' | 'doctor'>('dashboard');
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const { toast } = useToast();
   
   // Load user profile and reminders
@@ -47,6 +50,11 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
         // Convert DB reminders to form reminders
         const formReminders = userReminders.map(convertDBReminderToForm);
         setReminders(formReminders);
+
+        // Initialiser les notifications
+        const notifInitialized = await initializeNotifications();
+        setNotificationsEnabled(notifInitialized);
+        
       } catch (error) {
         console.error("Error fetching user data:", error);
         toast({
@@ -70,6 +78,29 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
       
       setReminders([...reminders, newFormReminder]);
       setIsCreatingReminder(false);
+
+      // Programmer la notification si activée
+      if (notificationsEnabled) {
+        const [hours, minutes] = reminder.time.split(':').map(Number);
+        const scheduleDate = new Date();
+        scheduleDate.setHours(hours, minutes, 0, 0);
+        
+        // Si l'heure est passée aujourd'hui, programmer pour demain
+        if (scheduleDate < new Date()) {
+          scheduleDate.setDate(scheduleDate.getDate() + 1);
+        }
+
+        await scheduleReminderNotification({
+          id: parseInt(newDBReminder.id.replace(/-/g, '').substring(0, 8), 16),
+          title: `Rappel médicament: ${reminder.medicationName}`,
+          body: `Il est temps de prendre ${reminder.dosage}`,
+          schedule: {
+            at: scheduleDate,
+            repeats: true,
+            every: 'day'
+          }
+        });
+      }
       
       toast({
         title: "Rappel ajouté",
@@ -182,7 +213,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
             </div>
           </div>
 
-          {/* Boutons de rôles spéciaux - toujours visible quand applicable */}
+          {/* Boutons de rôles spéciaux */}
           {(userRole === 'admin' || userRole === 'doctor') && (
             <Card className="border-2 border-blue-200 dark:border-blue-800">
               <CardHeader className="pb-4">
@@ -235,26 +266,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
             </TabsList>
             
             <TabsContent value="prescriptions">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <Card className="cursor-pointer hover:shadow-md transition-shadow dark-container">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">Centre Hospitalier</CardTitle>
-                    <CardDescription>Dr. Martin - 12/04/2025</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">3 médicaments</p>
-                  </CardContent>
-                </Card>
-                
-                <Button 
-                  variant="outline" 
-                  className="h-[140px] border-dashed dark-container"
-                  onClick={() => setIsCreatingPrescription(true)}
-                >
-                  <Plus size={18} className="mr-2" />
-                  Ajouter une ordonnance
-                </Button>
-              </div>
+              <PrescriptionsList userId={userId} />
             </TabsContent>
             
             <TabsContent value="medications">
@@ -281,6 +293,16 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
                   Ajouter un rappel
                 </Button>
               </div>
+              
+              {!notificationsEnabled && (
+                <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950 dark:border-yellow-800">
+                  <CardContent className="pt-4">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                      Les notifications ne sont pas activées. Les rappels seront visibles uniquement dans l'application.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
               
               {loading ? (
                 <div className="py-4 text-center">
