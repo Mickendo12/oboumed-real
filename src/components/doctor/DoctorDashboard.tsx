@@ -84,7 +84,11 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ userId }) => {
             ← Retour au tableau de bord médecin
           </Button>
         </div>
-        <PatientProfile patientId={selectedPatientId} doctorId={userId} />
+        <PatientProfile 
+          patientId={selectedPatientId} 
+          doctorId={userId}
+          onBack={() => setSelectedPatientId(null)}
+        />
       </div>
     );
   }
@@ -129,7 +133,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ userId }) => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <QRCodeCameraScanner onPatientFound={handlePatientFound} />
+                <QRCodeCameraScanner onScanResult={handlePatientFound} />
               </CardContent>
             </Card>
 
