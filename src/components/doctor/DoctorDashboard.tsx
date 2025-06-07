@@ -149,7 +149,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ userId }) => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <QRCodeScanner onScanSuccess={handlePatientFound} />
+                <QRCodeScanner onPatientFound={handlePatientFound} />
               </CardContent>
             </Card>
 
