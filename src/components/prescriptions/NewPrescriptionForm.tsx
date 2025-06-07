@@ -3,14 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { addDocument, COLLECTIONS } from '@/services/firestoreService';
+import { createPrescriptionWithMedications, uploadPrescriptionImage } from '@/services/prescriptionService';
 import PrescriptionDetails from './prescription-form/PrescriptionDetails';
 import MedicationList from './prescription-form/MedicationList';
 import PrescriptionScanner from './prescription-form/PrescriptionScanner';
 import MedicationDetailsForm from './medication-form/MedicationDetailsForm';
-import { Medication, Prescription, OcrResult } from './prescription-form/types';
-import { ref, uploadString, getDownloadURL } from 'firebase/storage';
-import { storage } from '@/lib/firebase';
+import { Medication, OcrResult } from './prescription-form/types';
 
 interface NewPrescriptionFormProps {
   onComplete: () => void;
@@ -46,65 +44,38 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
     });
   };
 
-  const uploadPrescriptionImage = async (imageData: string): Promise<{ url: string, path: string }> => {
-    if (!imageData) return { url: '', path: '' };
-    
-    setUploading(true);
-    try {
-      const imagePath = `prescriptions/${userId}/${Date.now()}.jpg`;
-      const storageRef = ref(storage, imagePath);
-      
-      const imageDataForUpload = imageData.startsWith('data:') 
-        ? imageData 
-        : `data:image/jpeg;base64,${imageData}`;
-      
-      await uploadString(storageRef, imageDataForUpload, 'data_url');
-      const downloadUrl = await getDownloadURL(storageRef);
-      
-      return { url: downloadUrl, path: imagePath };
-    } catch (error) {
-      console.error("Erreur lors du téléversement:", error);
-      toast({
-        variant: "destructive",
-        title: "Erreur de téléversement",
-        description: "L'image n'a pas pu être téléversée. Veuillez réessayer."
-      });
-      return { url: '', path: '' };
-    } finally {
-      setUploading(false);
-    }
-  };
-
   const handleSavePrescription = async () => {
     try {
       setSaving(true);
       
       let uploadResult = { url: '', path: '' };
       if (prescriptionImage) {
-        uploadResult = await uploadPrescriptionImage(prescriptionImage);
+        setUploading(true);
+        uploadResult = await uploadPrescriptionImage(prescriptionImage, userId);
+        setUploading(false);
       }
       
-      // Créer l'objet de données en excluant les champs undefined
-      const prescriptionData: Partial<Prescription> = {
-        hospitalName,
-        doctorName,
-        pharmacyName,
-        prescriptionDate,
-        medications,
+      const prescriptionData = {
+        hospitalName: hospitalName || undefined,
+        doctorName: doctorName || undefined,
+        pharmacyName: pharmacyName || undefined,
+        prescriptionDate: prescriptionDate || undefined,
+        imageUrl: uploadResult.url || imageUrl || undefined,
+        imageStoragePath: uploadResult.path || imageStoragePath || undefined,
         userId,
-        createdAt: Date.now(),
       };
 
-      // Ajouter conditionnellement les champs optionnels seulement s'ils ont des valeurs
-      if (uploadResult.url || imageUrl) {
-        prescriptionData.imageUrl = uploadResult.url || imageUrl;
-      }
+      // Convertir les médicaments au format attendu par Supabase
+      const medicationsData = medications.map(med => ({
+        name: med.name,
+        dosage: med.dosage || undefined,
+        frequency: med.frequency || undefined,
+        posology: med.posology || undefined,
+        comments: med.comments || undefined,
+        treatment_duration: med.treatment_duration || undefined,
+      }));
       
-      if (uploadResult.path || imageStoragePath) {
-        prescriptionData.imageStoragePath = uploadResult.path || imageStoragePath;
-      }
-      
-      await addDocument(COLLECTIONS.PRESCRIPTIONS, prescriptionData);
+      await createPrescriptionWithMedications(prescriptionData, medicationsData);
       
       toast({
         title: "Ordonnance enregistrée",
@@ -121,6 +92,7 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
       });
     } finally {
       setSaving(false);
+      setUploading(false);
     }
   };
 
@@ -132,13 +104,21 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
     setPrescriptionImage(imageData);
     
     try {
-      const { url, path } = await uploadPrescriptionImage(imageData);
+      setUploading(true);
+      const { url, path } = await uploadPrescriptionImage(imageData, userId);
       if (url) {
         setImageUrl(url);
         setImageStoragePath(path);
       }
     } catch (error) {
       console.error("Erreur lors du téléversement de l'image:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur de téléversement",
+        description: "L'image n'a pas pu être téléversée. Vous pourrez réessayer lors de l'enregistrement."
+      });
+    } finally {
+      setUploading(false);
     }
     
     setMedications(prevMeds => [...prevMeds, ...result.medications]);
