@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, Users, QrCode, Activity } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import QRCodeScanner from './QRCodeScanner';
 import QRCodeCameraScanner from './QRCodeCameraScanner';
 import PatientProfile from './PatientProfile';
@@ -149,7 +149,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ userId }) => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <QRCodeScanner onPatientFound={handlePatientFound} />
+                <QRCodeScanner onScanSuccess={handlePatientFound} />
               </CardContent>
             </Card>
 

@@ -7,7 +7,7 @@ import Footer from '@/components/Footer';
 import { LayoutDashboard } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { logOut } from '@/services/authService';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -106,7 +106,6 @@ const Index = () => {
         ) : isAuthenticated && user ? (
           <div className="animate-fade-in">
             <Dashboard 
-              userName={user.displayName || user.email.split('@')[0]} 
               userId={user.id}
             />
           </div>

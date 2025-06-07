@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { toast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import {
   Table,
   TableBody,
@@ -156,7 +157,15 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
   })
 
   function onSubmit(values: z.infer<typeof ReminderFormSchema>) {
-    handleAddReminder(values);
+    // Ensure all required fields are present before calling handleAddReminder
+    const reminderData: Omit<ReminderForm, 'id'> = {
+      title: values.title,
+      medicationName: values.medicationName,
+      time: values.time,
+      days: values.days,
+      notes: values.notes || '',
+    };
+    handleAddReminder(reminderData);
   }
 
   return (
