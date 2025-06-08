@@ -1,11 +1,26 @@
 
-import { LocalNotifications } from '@capacitor/local-notifications';
-import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 
+// Import conditionnel des plugins Capacitor
+let LocalNotifications: any;
+let PushNotifications: any;
+
+if (Capacitor.isNativePlatform()) {
+  try {
+    import('@capacitor/local-notifications').then(module => {
+      LocalNotifications = module.LocalNotifications;
+    });
+    import('@capacitor/push-notifications').then(module => {
+      PushNotifications = module.PushNotifications;
+    });
+  } catch (error) {
+    console.warn('Capacitor notification plugins not available:', error);
+  }
+}
+
 export const initializeNotifications = async (): Promise<boolean> => {
-  if (!Capacitor.isNativePlatform()) {
-    console.log('Notifications not supported on web platform');
+  if (!Capacitor.isNativePlatform() || !LocalNotifications || !PushNotifications) {
+    console.log('Notifications not supported on this platform');
     return false;
   }
 
@@ -24,19 +39,19 @@ export const initializeNotifications = async (): Promise<boolean> => {
     }
 
     // Configurer les listeners pour les notifications push
-    PushNotifications.addListener('registration', (token) => {
+    PushNotifications.addListener('registration', (token: any) => {
       console.log('Push registration success, token: ' + token.value);
     });
 
-    PushNotifications.addListener('registrationError', (error) => {
+    PushNotifications.addListener('registrationError', (error: any) => {
       console.error('Push registration error: ', error);
     });
 
-    PushNotifications.addListener('pushNotificationReceived', (notification) => {
+    PushNotifications.addListener('pushNotificationReceived', (notification: any) => {
       console.log('Push notification received: ', notification);
     });
 
-    PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+    PushNotifications.addListener('pushNotificationActionPerformed', (notification: any) => {
       console.log('Push notification action performed: ', notification);
     });
 
@@ -56,8 +71,8 @@ export const scheduleReminderNotification = async (reminder: {
   body: string;
   schedule: any;
 }): Promise<boolean> => {
-  if (!Capacitor.isNativePlatform()) {
-    console.log('Scheduling notifications not supported on web platform');
+  if (!Capacitor.isNativePlatform() || !LocalNotifications) {
+    console.log('Scheduling notifications not supported on this platform');
     // Pour le web, on peut utiliser les notifications du navigateur
     return scheduleWebNotification(reminder);
   }
@@ -123,8 +138,8 @@ const scheduleWebNotification = async (reminder: {
 };
 
 export const cancelReminderNotification = async (notificationId: string): Promise<boolean> => {
-  if (!Capacitor.isNativePlatform()) {
-    console.log('Cancelling notifications not supported on web platform');
+  if (!Capacitor.isNativePlatform() || !LocalNotifications) {
+    console.log('Cancelling notifications not supported on this platform');
     return false;
   }
 
@@ -148,7 +163,7 @@ export const cancelReminderNotification = async (notificationId: string): Promis
 };
 
 export const getPendingNotifications = async (): Promise<any[]> => {
-  if (!Capacitor.isNativePlatform()) {
+  if (!Capacitor.isNativePlatform() || !LocalNotifications) {
     return [];
   }
 

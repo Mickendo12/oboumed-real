@@ -35,13 +35,10 @@ const PrescriptionsList: React.FC<PrescriptionsListProps> = ({ userId }) => {
     try {
       setLoading(true);
       
-      // Récupérer les ordonnances avec le nombre de médicaments
+      // Récupérer les ordonnances
       const { data: prescriptionsData, error: prescriptionsError } = await supabase
         .from('prescriptions')
-        .select(`
-          *,
-          medications:medications(count)
-        `)
+        .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
@@ -49,11 +46,20 @@ const PrescriptionsList: React.FC<PrescriptionsListProps> = ({ userId }) => {
         throw prescriptionsError;
       }
 
-      // Transformer les données pour inclure le nombre de médicaments
-      const prescriptionsWithCount = prescriptionsData?.map(prescription => ({
-        ...prescription,
-        medications_count: prescription.medications?.[0]?.count || 0
-      })) || [];
+      // Pour chaque ordonnance, compter les médicaments
+      const prescriptionsWithCount = await Promise.all(
+        (prescriptionsData || []).map(async (prescription) => {
+          const { count } = await supabase
+            .from('medications')
+            .select('*', { count: 'exact', head: true })
+            .eq('prescription_id', prescription.id);
+
+          return {
+            ...prescription,
+            medications_count: count || 0
+          };
+        })
+      );
 
       setPrescriptions(prescriptionsWithCount);
     } catch (error) {
@@ -148,7 +154,7 @@ const PrescriptionsList: React.FC<PrescriptionsListProps> = ({ userId }) => {
                 
                 <div className="flex items-center justify-between pt-2">
                   <Badge variant="outline">
-                    {prescription.medications_count} médicament{prescription.medications_count > 1 ? 's' : ''}
+                    {prescription.medications_count} médicament{(prescription.medications_count || 0) > 1 ? 's' : ''}
                   </Badge>
                   <Button size="sm" variant="ghost">
                     <Eye size={14} className="mr-1" />
