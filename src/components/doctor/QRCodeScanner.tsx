@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { QrCode, Type, Camera, AlertCircle } from 'lucide-react';
+import { QrCode, Type, Camera, AlertCircle, CheckCircle } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 
@@ -21,6 +21,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ isOpen, onClose, onScan }
   const [isNative, setIsNative] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string>('');
+  const [success, setSuccess] = useState<string>('');
 
   useEffect(() => {
     setIsNative(Capacitor.isNativePlatform());
@@ -35,6 +36,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ isOpen, onClose, onScan }
     try {
       setScanning(true);
       setError('');
+      setSuccess('');
 
       // Demander les permissions de caméra
       const permissions = await CapacitorCamera.checkPermissions();
@@ -58,10 +60,8 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ isOpen, onClose, onScan }
       });
 
       if (image.dataUrl) {
-        // Ici, nous devrions normalement décoder le QR code depuis l'image
-        // Pour l'instant, on demande à l'utilisateur de saisir manuellement
+        setSuccess('Photo prise avec succès. Veuillez saisir le code QR manuellement.');
         setMode('manual');
-        setError('Veuillez saisir le code QR manuellement après avoir pris la photo');
       }
     } catch (error) {
       console.error('Erreur lors du scan:', error);
@@ -73,9 +73,9 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ isOpen, onClose, onScan }
   };
 
   const handleWebScan = () => {
-    // Pour le web, on redirige vers la saisie manuelle
     setMode('manual');
-    setError('Scan web en développement. Utilisez la saisie manuelle.');
+    setError('');
+    setSuccess('Scanner web non disponible. Utilisez la saisie manuelle.');
   };
 
   const handleScan = () => {
@@ -88,16 +88,27 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ isOpen, onClose, onScan }
 
   const handleManualSubmit = () => {
     if (manualCode.trim()) {
+      // Valider le format du QR code (basique)
+      if (manualCode.length < 10) {
+        setError('Le code QR semble trop court. Vérifiez la saisie.');
+        return;
+      }
+      
+      setError('');
+      setSuccess('Code QR validé avec succès !');
       onScan(manualCode.trim());
       setManualCode('');
-      setError('');
+    } else {
+      setError('Veuillez saisir un code QR valide.');
     }
   };
 
   const handleClose = () => {
     setManualCode('');
     setError('');
+    setSuccess('');
     setScanning(false);
+    setMode('scan');
     onClose();
   };
 
@@ -105,7 +116,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ isOpen, onClose, onScan }
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Scanner un code QR</DialogTitle>
+          <DialogTitle>Scanner un code QR patient</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
@@ -116,10 +127,21 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ isOpen, onClose, onScan }
             </Alert>
           )}
 
+          {success && (
+            <Alert className="border-green-200 bg-green-50 text-green-800">
+              <CheckCircle size={16} />
+              <AlertDescription>{success}</AlertDescription>
+            </Alert>
+          )}
+
           <div className="flex gap-2">
             <Button
               variant={mode === 'scan' ? 'default' : 'outline'}
-              onClick={() => setMode('scan')}
+              onClick={() => {
+                setMode('scan');
+                setError('');
+                setSuccess('');
+              }}
               className="flex-1"
             >
               <Camera size={16} className="mr-2" />
@@ -127,7 +149,11 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ isOpen, onClose, onScan }
             </Button>
             <Button
               variant={mode === 'manual' ? 'default' : 'outline'}
-              onClick={() => setMode('manual')}
+              onClick={() => {
+                setMode('manual');
+                setError('');
+                setSuccess('');
+              }}
               className="flex-1"
             >
               <Type size={16} className="mr-2" />
@@ -141,7 +167,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ isOpen, onClose, onScan }
                 <div className="space-y-4">
                   <Camera size={64} className="mx-auto mb-4 text-primary" />
                   <p className="text-muted-foreground mb-4">
-                    Appuyez sur le bouton pour ouvrir la caméra et scanner le QR code
+                    Appuyez sur le bouton pour ouvrir la caméra et scanner le QR code du patient
                   </p>
                   <Button 
                     onClick={handleScan}
@@ -156,14 +182,14 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ isOpen, onClose, onScan }
                 <div className="space-y-4">
                   <QrCode size={64} className="mx-auto mb-4 text-muted-foreground" />
                   <p className="text-muted-foreground mb-4">
-                    Scanner QR web en cours de développement.
+                    Scanner QR web non disponible sur cette plateforme.
                   </p>
                   <Button 
                     onClick={handleScan}
                     variant="outline"
                   >
-                    <QrCode size={16} className="mr-2" />
-                    Scanner (Web)
+                    <Type size={16} className="mr-2" />
+                    Utiliser la saisie manuelle
                   </Button>
                 </div>
               )}
@@ -173,24 +199,32 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ isOpen, onClose, onScan }
           {mode === 'manual' && (
             <div className="space-y-4">
               <div>
-                <Label htmlFor="qr-code">Code QR</Label>
+                <Label htmlFor="qr-code">Code QR du patient</Label>
                 <Input
                   id="qr-code"
-                  placeholder="Saisissez le code QR..."
+                  placeholder="Saisissez ou collez le code QR..."
                   value={manualCode}
-                  onChange={(e) => setManualCode(e.target.value)}
+                  onChange={(e) => {
+                    setManualCode(e.target.value);
+                    setError('');
+                    setSuccess('');
+                  }}
                   onKeyPress={(e) => e.key === 'Enter' && handleManualSubmit()}
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Le code QR est une chaîne de caractères unique fournie par le patient
+                </p>
               </div>
-              <Button onClick={handleManualSubmit} className="w-full">
-                Valider
+              <Button onClick={handleManualSubmit} className="w-full" disabled={!manualCode.trim()}>
+                <QrCode size={16} className="mr-2" />
+                Valider le code QR
               </Button>
             </div>
           )}
 
           {isNative && (
-            <div className="text-xs text-muted-foreground text-center">
-              Application native détectée - Caméra disponible
+            <div className="text-xs text-muted-foreground text-center border-t pt-4">
+              Application native détectée - Fonctionnalités caméra disponibles
             </div>
           )}
         </div>
