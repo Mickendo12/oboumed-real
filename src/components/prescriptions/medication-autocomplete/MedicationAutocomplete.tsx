@@ -142,10 +142,19 @@ const MedicationAutocomplete: React.FC<MedicationAutocompleteProps> = ({
     // Incrémenter le compteur d'usage si c'est un médicament personnalisé
     if (medication.id.length === 36) { // UUID format
       try {
-        await supabase
+        // Récupérer le compteur actuel et l'incrémenter
+        const { data: currentMed } = await supabase
           .from('custom_medications')
-          .update({ usage_count: supabase.sql`usage_count + 1` })
-          .eq('id', medication.id);
+          .select('usage_count')
+          .eq('id', medication.id)
+          .single();
+
+        if (currentMed) {
+          await supabase
+            .from('custom_medications')
+            .update({ usage_count: currentMed.usage_count + 1 })
+            .eq('id', medication.id);
+        }
       } catch (error) {
         console.error('Error incrementing usage count:', error);
       }
