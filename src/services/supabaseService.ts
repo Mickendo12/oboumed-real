@@ -183,6 +183,25 @@ export const deleteReminder = async (id: string): Promise<void> => {
 
 // QR Code functions
 export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => {
+  // Vérifier s'il existe déjà un QR code actif pour cet utilisateur
+  const { data: existingQRCode } = await supabase
+    .from('qr_codes')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .single();
+
+  // Si un QR code actif existe déjà, le retourner
+  if (existingQRCode) {
+    return existingQRCode;
+  }
+
+  // Marquer tous les anciens QR codes comme expirés
+  await supabase
+    .from('qr_codes')
+    .update({ status: 'expired' })
+    .eq('user_id', userId);
+
   const { data: qrCodeText, error: funcError } = await supabase.rpc('generate_qr_code', {
     patient_user_id: userId
   });
@@ -197,7 +216,7 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
       user_id: userId,
       qr_code: qrCodeText,
       status: 'active',
-      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24h
+      expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 an (QR permanent)
     })
     .select()
     .single();
