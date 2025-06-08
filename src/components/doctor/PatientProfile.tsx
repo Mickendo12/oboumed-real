@@ -1,19 +1,18 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
-import { ArrowLeft, User, Pill, FileText, Clock } from 'lucide-react';
+import { ArrowLeft, User, Pill, FileText } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { 
   getUserProfile, 
   getMedicationsForUser, 
-  getRemindersForUser,
   logAccess,
   Profile, 
   Medication 
 } from '@/services/supabaseService';
-import { ReminderDB } from '@/types/reminder';
 
 interface PatientProfileProps {
   patientId: string;
@@ -24,7 +23,6 @@ interface PatientProfileProps {
 const PatientProfile: React.FC<PatientProfileProps> = ({ patientId, doctorId, onBack }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [medications, setMedications] = useState<Medication[]>([]);
-  const [reminders, setReminders] = useState<ReminderDB[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -35,15 +33,13 @@ const PatientProfile: React.FC<PatientProfileProps> = ({ patientId, doctorId, on
   const loadPatientData = async () => {
     try {
       setLoading(true);
-      const [profileData, medicationsData, remindersData] = await Promise.all([
+      const [profileData, medicationsData] = await Promise.all([
         getUserProfile(patientId),
-        getMedicationsForUser(patientId),
-        getRemindersForUser(patientId)
+        getMedicationsForUser(patientId)
       ]);
 
       setProfile(profileData);
       setMedications(medicationsData);
-      setReminders(remindersData);
 
       // Log profile view
       await logAccess({
@@ -94,7 +90,7 @@ const PatientProfile: React.FC<PatientProfileProps> = ({ patientId, doctorId, on
           Retour
         </Button>
         <h2 className="text-xl font-semibold">Dossier médical</h2>
-        <Badge variant="outline">Accès temporaire</Badge>
+        <Badge variant="outline">Accès temporaire (30 min)</Badge>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -180,59 +176,50 @@ const PatientProfile: React.FC<PatientProfileProps> = ({ patientId, doctorId, on
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card className="dark-container">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Pill size={20} />
-              Médicaments ({medications.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {medications.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Aucun médicament enregistré</p>
-            ) : (
-              <div className="space-y-3">
-                {medications.map((med) => (
-                  <div key={med.id} className="border rounded p-3">
-                    <h5 className="font-medium">{med.name}</h5>
-                    <p className="text-sm text-muted-foreground">{med.dosage}</p>
-                    <p className="text-xs">{med.frequency}</p>
+      <Card className="dark-container">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Pill size={20} />
+            Ordonnances et médicaments ({medications.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {medications.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Aucun médicament enregistré</p>
+          ) : (
+            <div className="space-y-3">
+              {medications.map((med) => (
+                <div key={med.id} className="border rounded p-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h5 className="font-medium">{med.name}</h5>
+                      {med.dosage && <p className="text-sm text-muted-foreground">{med.dosage}</p>}
+                      {med.frequency && <p className="text-xs">{med.frequency}</p>}
+                      {med.posology && <p className="text-xs text-muted-foreground">Posologie: {med.posology}</p>}
+                      {med.treatment_duration && <p className="text-xs">Durée: {med.treatment_duration}</p>}
+                      {med.doctor_prescribed && <p className="text-xs">Prescrit par: Dr. {med.doctor_prescribed}</p>}
+                      {med.comments && <p className="text-xs text-muted-foreground">Commentaires: {med.comments}</p>}
+                    </div>
+                    {med.prescription_id && (
+                      <Badge variant="secondary" className="ml-2">
+                        <FileText size={12} className="mr-1" />
+                        Ordonnance
+                      </Badge>
+                    )}
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="dark-container">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock size={20} />
-              Rappels ({reminders.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {reminders.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Aucun rappel configuré</p>
-            ) : (
-              <div className="space-y-3">
-                {reminders.map((reminder) => (
-                  <div key={reminder.id} className="border rounded p-3">
-                    <h5 className="font-medium">{reminder.medication_name}</h5>
-                    <p className="text-sm text-muted-foreground">
-                      {reminder.time} - {reminder.frequency}
-                    </p>
-                    <Badge variant={reminder.is_active ? "default" : "secondary"} className="mt-1">
-                      {reminder.is_active ? "Actif" : "Inactif"}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                  {(med.start_date || med.end_date) && (
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      {med.start_date && `Début: ${new Date(med.start_date).toLocaleDateString('fr-FR')}`}
+                      {med.start_date && med.end_date && ' - '}
+                      {med.end_date && `Fin: ${new Date(med.end_date).toLocaleDateString('fr-FR')}`}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
