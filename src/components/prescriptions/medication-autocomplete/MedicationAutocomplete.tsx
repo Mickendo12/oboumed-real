@@ -6,6 +6,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Check, ChevronsUpDown, Plus, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { searchMedicationByName } from '@/services/medicationApiService';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Medication {
   id: string;
@@ -41,8 +42,32 @@ const MedicationAutocomplete: React.FC<MedicationAutocompleteProps> = ({
 
       setLoading(true);
       try {
-        const results = await searchMedicationByName(searchValue);
-        setMedications(results);
+        // Rechercher dans l'API externe
+        const apiResults = await searchMedicationByName(searchValue);
+        
+        // Rechercher dans les médicaments personnalisés
+        const { data: customMeds, error } = await supabase
+          .from('custom_medications')
+          .select('*')
+          .or(`name.ilike.%${searchValue}%, active_ingredient.ilike.%${searchValue}%`)
+          .order('usage_count', { ascending: false })
+          .limit(5);
+
+        let customResults: Medication[] = [];
+        if (!error && customMeds) {
+          customResults = customMeds.map(med => ({
+            id: med.id,
+            name: med.name,
+            dosage: med.dosage || '',
+            form: med.form || '',
+            activeIngredient: med.active_ingredient || '',
+            manufacturer: med.manufacturer || ''
+          }));
+        }
+
+        // Combiner les résultats
+        const allResults = [...customResults, ...apiResults];
+        setMedications(allResults);
       } catch (error) {
         console.error('Error searching medications:', error);
         setMedications([]);
@@ -57,18 +82,78 @@ const MedicationAutocomplete: React.FC<MedicationAutocompleteProps> = ({
 
   const selectedMedication = medications.find(med => med.name === value);
 
-  const handleAddNewMedication = () => {
+  const handleAddNewMedication = async () => {
     if (searchValue.trim()) {
-      const newMedication: Medication = {
-        id: `custom_${Date.now()}`,
-        name: searchValue.trim(),
-        dosage: "",
-        form: "Non spécifié"
-      };
-      onSelect(newMedication);
+      try {
+        // Ajouter le médicament personnalisé à la base de données
+        const { data: user } = await supabase.auth.getUser();
+        if (user.user) {
+          const { data: newMed, error } = await supabase
+            .from('custom_medications')
+            .insert({
+              name: searchValue.trim(),
+              dosage: "",
+              form: "Non spécifié",
+              created_by: user.user.id,
+              usage_count: 1
+            })
+            .select()
+            .single();
+
+          if (!error && newMed) {
+            const newMedication: Medication = {
+              id: newMed.id,
+              name: newMed.name,
+              dosage: newMed.dosage || "",
+              form: newMed.form || "Non spécifié",
+              activeIngredient: newMed.active_ingredient || "",
+              manufacturer: newMed.manufacturer || ""
+            };
+            onSelect(newMedication);
+          } else {
+            // Fallback si l'ajout échoue
+            const fallbackMedication: Medication = {
+              id: `custom_${Date.now()}`,
+              name: searchValue.trim(),
+              dosage: "",
+              form: "Non spécifié"
+            };
+            onSelect(fallbackMedication);
+          }
+        }
+      } catch (error) {
+        console.error('Error adding custom medication:', error);
+        // Fallback en cas d'erreur
+        const fallbackMedication: Medication = {
+          id: `custom_${Date.now()}`,
+          name: searchValue.trim(),
+          dosage: "",
+          form: "Non spécifié"
+        };
+        onSelect(fallbackMedication);
+      }
+      
       setOpen(false);
       setSearchValue("");
     }
+  };
+
+  const handleSelectMedication = async (medication: Medication) => {
+    // Incrémenter le compteur d'usage si c'est un médicament personnalisé
+    if (medication.id.length === 36) { // UUID format
+      try {
+        await supabase
+          .from('custom_medications')
+          .update({ usage_count: supabase.sql`usage_count + 1` })
+          .eq('id', medication.id);
+      } catch (error) {
+        console.error('Error incrementing usage count:', error);
+      }
+    }
+    
+    onSelect(medication);
+    setOpen(false);
+    setSearchValue("");
   };
 
   const showAddButton = searchValue.length > 2 && 
@@ -112,11 +197,7 @@ const MedicationAutocomplete: React.FC<MedicationAutocompleteProps> = ({
                   <CommandItem
                     key={medication.id}
                     value={medication.name}
-                    onSelect={() => {
-                      onSelect(medication);
-                      setOpen(false);
-                      setSearchValue("");
-                    }}
+                    onSelect={() => handleSelectMedication(medication)}
                   >
                     <Check
                       className={cn(

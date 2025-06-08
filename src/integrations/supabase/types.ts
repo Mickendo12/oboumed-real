@@ -67,6 +67,42 @@ export type Database = {
           },
         ]
       }
+      custom_medications: {
+        Row: {
+          active_ingredient: string | null
+          created_at: string
+          created_by: string
+          dosage: string | null
+          form: string | null
+          id: string
+          manufacturer: string | null
+          name: string
+          usage_count: number
+        }
+        Insert: {
+          active_ingredient?: string | null
+          created_at?: string
+          created_by: string
+          dosage?: string | null
+          form?: string | null
+          id?: string
+          manufacturer?: string | null
+          name: string
+          usage_count?: number
+        }
+        Update: {
+          active_ingredient?: string | null
+          created_at?: string
+          created_by?: string
+          dosage?: string | null
+          form?: string | null
+          id?: string
+          manufacturer?: string | null
+          name?: string
+          usage_count?: number
+        }
+        Relationships: []
+      }
       doctor_access_sessions: {
         Row: {
           access_granted_at: string | null
