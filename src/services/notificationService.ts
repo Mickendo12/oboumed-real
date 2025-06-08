@@ -1,26 +1,41 @@
 
 import { Capacitor } from '@capacitor/core';
 
-// Import conditionnel des plugins Capacitor
-let LocalNotifications: any;
-let PushNotifications: any;
+// Variables pour les plugins Capacitor
+let LocalNotifications: any = null;
+let PushNotifications: any = null;
 
-if (Capacitor.isNativePlatform()) {
+// Fonction pour initialiser les plugins de façon asynchrone
+const initializeCapacitorPlugins = async () => {
+  if (!Capacitor.isNativePlatform()) {
+    return false;
+  }
+
   try {
-    import('@capacitor/local-notifications').then(module => {
-      LocalNotifications = module.LocalNotifications;
-    });
-    import('@capacitor/push-notifications').then(module => {
-      PushNotifications = module.PushNotifications;
-    });
+    // Import dynamique conditionnel
+    const localNotificationsModule = await import('@capacitor/local-notifications');
+    LocalNotifications = localNotificationsModule.LocalNotifications;
+
+    const pushNotificationsModule = await import('@capacitor/push-notifications');
+    PushNotifications = pushNotificationsModule.PushNotifications;
+
+    return true;
   } catch (error) {
     console.warn('Capacitor notification plugins not available:', error);
+    return false;
   }
-}
+};
 
 export const initializeNotifications = async (): Promise<boolean> => {
-  if (!Capacitor.isNativePlatform() || !LocalNotifications || !PushNotifications) {
+  if (!Capacitor.isNativePlatform()) {
     console.log('Notifications not supported on this platform');
+    return false;
+  }
+
+  // Initialiser les plugins d'abord
+  const pluginsLoaded = await initializeCapacitorPlugins();
+  if (!pluginsLoaded || !LocalNotifications || !PushNotifications) {
+    console.log('Could not load notification plugins');
     return false;
   }
 
@@ -71,10 +86,19 @@ export const scheduleReminderNotification = async (reminder: {
   body: string;
   schedule: any;
 }): Promise<boolean> => {
-  if (!Capacitor.isNativePlatform() || !LocalNotifications) {
+  if (!Capacitor.isNativePlatform()) {
     console.log('Scheduling notifications not supported on this platform');
     // Pour le web, on peut utiliser les notifications du navigateur
     return scheduleWebNotification(reminder);
+  }
+
+  // Initialiser les plugins si pas encore fait
+  if (!LocalNotifications) {
+    const pluginsLoaded = await initializeCapacitorPlugins();
+    if (!pluginsLoaded || !LocalNotifications) {
+      console.log('Could not load local notifications plugin');
+      return scheduleWebNotification(reminder);
+    }
   }
 
   try {
@@ -138,9 +162,18 @@ const scheduleWebNotification = async (reminder: {
 };
 
 export const cancelReminderNotification = async (notificationId: string): Promise<boolean> => {
-  if (!Capacitor.isNativePlatform() || !LocalNotifications) {
+  if (!Capacitor.isNativePlatform()) {
     console.log('Cancelling notifications not supported on this platform');
     return false;
+  }
+
+  // Initialiser les plugins si pas encore fait
+  if (!LocalNotifications) {
+    const pluginsLoaded = await initializeCapacitorPlugins();
+    if (!pluginsLoaded || !LocalNotifications) {
+      console.log('Could not load local notifications plugin');
+      return false;
+    }
   }
 
   try {
@@ -163,8 +196,16 @@ export const cancelReminderNotification = async (notificationId: string): Promis
 };
 
 export const getPendingNotifications = async (): Promise<any[]> => {
-  if (!Capacitor.isNativePlatform() || !LocalNotifications) {
+  if (!Capacitor.isNativePlatform()) {
     return [];
+  }
+
+  // Initialiser les plugins si pas encore fait
+  if (!LocalNotifications) {
+    const pluginsLoaded = await initializeCapacitorPlugins();
+    if (!pluginsLoaded || !LocalNotifications) {
+      return [];
+    }
   }
 
   try {
