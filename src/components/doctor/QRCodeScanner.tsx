@@ -17,6 +17,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
   const [cameraActive, setCameraActive] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [manualInput, setManualInput] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -60,12 +61,37 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
 
   const startScanning = () => {
     setScanning(true);
-    // Pour la démo, on simule la détection d'un QR code avec un code valide
-    const scanInterval = setInterval(() => {
+    // Simuler la détection d'un QR code en récupérant un vrai code de la base
+    const scanInterval = setInterval(async () => {
       if (Math.random() > 0.95) { // 5% de chance de "détecter" un QR code
         clearInterval(scanInterval);
-        // Utiliser un code QR qui existe vraiment dans la base de données
-        handleQRCodeDetected('test_qr_code_real');
+        
+        // Récupérer un code QR actif depuis la base de données
+        try {
+          const { data: qrCodes, error } = await supabase
+            .from('qr_codes')
+            .select('qr_code')
+            .eq('status', 'active')
+            .limit(1);
+          
+          if (qrCodes && qrCodes.length > 0) {
+            handleQRCodeDetected(qrCodes[0].qr_code);
+          } else {
+            setScanning(false);
+            toast({
+              variant: "destructive",
+              title: "Aucun QR code",
+              description: "Aucun QR code actif trouvé pour la démonstration."
+            });
+          }
+        } catch (error) {
+          setScanning(false);
+          toast({
+            variant: "destructive",
+            title: "Erreur de scan",
+            description: "Erreur lors de la recherche de QR codes."
+          });
+        }
       }
     }, 100);
 
@@ -101,9 +127,22 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
       // Simuler la lecture du QR code depuis l'image
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Pour la démo, on simule la détection d'un QR code valide
-      const mockQRCode = `test_qr_code_real`;
-      await handleQRCodeDetected(mockQRCode);
+      // Récupérer un code QR actif depuis la base de données
+      const { data: qrCodes, error } = await supabase
+        .from('qr_codes')
+        .select('qr_code')
+        .eq('status', 'active')
+        .limit(1);
+      
+      if (qrCodes && qrCodes.length > 0) {
+        await handleQRCodeDetected(qrCodes[0].qr_code);
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Aucun QR code",
+          description: "Aucun QR code actif trouvé dans l'image."
+        });
+      }
       
     } catch (error) {
       console.error('Erreur lors du traitement de l\'image:', error);
@@ -118,6 +157,21 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
         fileInputRef.current.value = '';
       }
     }
+  };
+
+  const handleManualInput = async () => {
+    if (!manualInput.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Code requis",
+        description: "Veuillez entrer un code QR."
+      });
+      return;
+    }
+
+    setProcessing(true);
+    await handleQRCodeDetected(manualInput.trim());
+    setProcessing(false);
   };
 
   const extractQRCodeFromUrl = (text: string): string | null => {
@@ -275,6 +329,25 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
             onChange={handleFileUpload}
             className="hidden"
           />
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Ou entrez le code manuellement :</label>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Code QR ou URL"
+              value={manualInput}
+              onChange={(e) => setManualInput(e.target.value)}
+              disabled={processing}
+            />
+            <Button 
+              onClick={handleManualInput}
+              disabled={!manualInput.trim() || processing}
+              size="sm"
+            >
+              Scanner
+            </Button>
+          </div>
         </div>
         
         {processing && (
