@@ -119,9 +119,9 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg max-w-[95vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-sm sm:text-base">
             <QrCode size={20} />
             Générer un QR Code d'accès médical
           </DialogTitle>
@@ -137,9 +137,9 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
             </CardHeader>
             <CardContent className="pt-0">
               <div className="space-y-1 text-sm">
-                <p><strong>Nom :</strong> {userName || 'Non renseigné'}</p>
-                <p><strong>Email :</strong> {userEmail}</p>
-                <p><strong>ID :</strong> {userId}</p>
+                <p className="break-all"><strong>Nom :</strong> {userName || 'Non renseigné'}</p>
+                <p className="break-all"><strong>Email :</strong> {userEmail}</p>
+                <p className="break-all text-xs"><strong>ID :</strong> {userId}</p>
               </div>
             </CardContent>
           </Card>
@@ -159,7 +159,8 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
                 <img 
                   src={qrCodeDataUrl} 
                   alt="QR Code d'accès au dossier médical" 
-                  className="border rounded-lg"
+                  className="border rounded-lg max-w-full h-auto"
+                  style={{ maxWidth: '280px' }}
                 />
               </div>
               
@@ -167,15 +168,15 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
                 <p className="text-sm text-muted-foreground">
                   QR Code permanent - Accès médical d'urgence (3 min par session)
                 </p>
-                <div className="text-xs font-mono bg-muted p-2 rounded break-all">
+                <div className="text-xs font-mono bg-muted p-2 rounded break-all overflow-wrap-anywhere">
                   {publicUrl}
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground break-all">
                   Code unique: {qrCodeText}
                 </p>
               </div>
               
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Button 
                   onClick={downloadQRCode}
                   className="flex-1"
@@ -194,7 +195,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
                 </Button>
               </div>
               
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Button 
                   onClick={openPublicUrl}
                   variant="outline"

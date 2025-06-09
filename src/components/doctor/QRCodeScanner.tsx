@@ -116,35 +116,43 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
     }
   };
 
-  const handleQRCodeDetected = async (qrCode: string) => {
+  const extractQRCodeFromUrl = (text: string): string | null => {
+    // Si c'est une URL, extraire le code QR de l'URL
+    if (text.includes('/medical-record/')) {
+      const parts = text.split('/medical-record/');
+      if (parts.length === 2) {
+        return parts[1];
+      }
+    }
+    // Sinon, considérer que c'est directement le code QR
+    return text;
+  };
+
+  const handleQRCodeDetected = async (scannedText: string) => {
     try {
       setProcessing(true);
       
-      // Vérifier que le QR code existe et est valide
-      const { data: qrData, error: qrError } = await supabase
-        .from('qr_codes')
-        .select(`
-          *,
-          profiles!qr_codes_user_id_fkey (
-            id,
-            name,
-            email,
-            phone_number,
-            blood_type,
-            allergies,
-            chronic_diseases,
-            current_medications,
-            emergency_contact_name,
-            emergency_contact_phone,
-            emergency_contact_relationship
-          )
-        `)
-        .eq('qr_code', qrCode)
-        .eq('status', 'active')
-        .gt('expires_at', new Date().toISOString())
-        .single();
+      // Extraire le code QR de l'URL ou utiliser le texte directement
+      const qrCode = extractQRCodeFromUrl(scannedText);
+      
+      if (!qrCode) {
+        toast({
+          variant: "destructive",
+          title: "QR Code invalide",
+          description: "Format de QR code non reconnu."
+        });
+        return;
+      }
 
-      if (qrError || !qrData) {
+      console.log('QR Code extrait:', qrCode);
+      
+      // Vérifier que le QR code existe et est valide en utilisant la fonction edge
+      const { data: validationResult, error: validationError } = await supabase.functions.invoke('validate-qr-access', {
+        body: { qrCode }
+      });
+
+      if (validationError || !validationResult?.accessGranted) {
+        console.error('Erreur de validation:', validationError);
         toast({
           variant: "destructive",
           title: "QR Code invalide",
@@ -153,39 +161,40 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
         return;
       }
 
-      // Récupérer les ordonnances et médicaments du patient
-      const { data: prescriptions, error: prescError } = await supabase
-        .from('prescriptions')
-        .select(`
-          *,
-          medications (*)
-        `)
-        .eq('user_id', qrData.user_id)
-        .order('created_at', { ascending: false });
+      // Récupérer les informations du patient
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', validationResult.userId)
+        .single();
 
-      if (prescError) {
-        console.error('Erreur lors de la récupération des ordonnances:', prescError);
+      if (profileError || !profileData) {
+        console.error('Erreur lors de la récupération du profil:', profileError);
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Impossible de récupérer les informations du patient."
+        });
+        return;
       }
 
-      // Enregistrer l'accès dans les logs
-      const { error: logError } = await supabase
-        .from('access_logs')
-        .insert({
-          action: 'qr_scan_access',
-          patient_id: qrData.user_id,
-          doctor_id: null, // TODO: Récupérer l'ID du médecin connecté
-          details: { qr_code_id: qrData.id, scan_method: 'camera_or_upload' }
-        });
+      // Récupérer les médicaments du patient
+      const { data: medications, error: medicationsError } = await supabase
+        .from('medications')
+        .select('*')
+        .eq('user_id', validationResult.userId)
+        .order('created_at', { ascending: false });
 
-      if (logError) {
-        console.error('Erreur lors de l\'enregistrement du log:', logError);
+      if (medicationsError) {
+        console.error('Erreur lors de la récupération des médicaments:', medicationsError);
       }
 
       // Préparer les données du patient
       const patientData = {
-        profile: qrData.profiles,
-        prescriptions: prescriptions || [],
-        qrCodeId: qrData.id
+        profile: profileData,
+        medications: medications || [],
+        qrCodeId: qrCode,
+        accessExpiresAt: validationResult.expiresAt
       };
 
       stopCamera();
@@ -193,7 +202,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
       
       toast({
         title: "QR Code scanné avec succès",
-        description: `Accès autorisé au profil de ${qrData.profiles?.name || 'Patient'}`
+        description: `Accès autorisé au profil de ${profileData.name || 'Patient'} jusqu'à ${new Date(validationResult.expiresAt).toLocaleTimeString('fr-FR')}`
       });
 
     } catch (error) {
