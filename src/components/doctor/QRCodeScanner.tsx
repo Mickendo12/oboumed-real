@@ -151,6 +151,9 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
         body: { qrCode }
       });
 
+      console.log('Validation result:', validationResult);
+      console.log('Validation error:', validationError);
+
       if (validationError || !validationResult?.accessGranted) {
         console.error('Erreur de validation:', validationError);
         toast({

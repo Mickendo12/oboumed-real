@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { User, Pill, Clock, AlertTriangle, Timer } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useParams } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   getUserProfile, 
   getMedicationsForUser, 
@@ -58,28 +59,38 @@ const PublicPatientProfile: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // Valider le QR code et obtenir les informations
-      const response = await fetch('/api/validate-qr-access', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ qrCode }),
+      console.log('Validating QR code:', qrCode);
+
+      // Valider le QR code en utilisant la fonction edge Supabase
+      const { data: validationResult, error: validationError } = await supabase.functions.invoke('validate-qr-access', {
+        body: { qrCode }
       });
 
-      if (!response.ok) {
+      console.log('Validation result:', validationResult);
+      console.log('Validation error:', validationError);
+
+      if (validationError) {
+        console.error('Erreur de validation:', validationError);
         throw new Error('QR code invalide ou expiré');
       }
 
-      const { userId, expiresAt } = await response.json();
-      setAccessExpiry(new Date(expiresAt));
+      if (!validationResult?.accessGranted) {
+        console.error('Accès refusé:', validationResult);
+        throw new Error('QR code invalide ou expiré');
+      }
+
+      setAccessExpiry(new Date(validationResult.expiresAt));
 
       // Charger les données du patient (toujours à jour)
       const [profileData, medicationsData, remindersData] = await Promise.all([
-        getUserProfile(userId),
-        getMedicationsForUser(userId),
-        getRemindersForUser(userId)
+        getUserProfile(validationResult.userId),
+        getMedicationsForUser(validationResult.userId),
+        getRemindersForUser(validationResult.userId)
       ]);
+
+      if (!profileData) {
+        throw new Error('Profil patient non trouvé');
+      }
 
       setProfile(profileData);
       setMedications(medicationsData);
