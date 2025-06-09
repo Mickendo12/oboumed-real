@@ -31,7 +31,10 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setCameraActive(true);
-        startScanning();
+        // Démarrer automatiquement le scan
+        setTimeout(() => {
+          startScanning();
+        }, 1000);
       }
     } catch (error) {
       console.error('Erreur d\'accès à la caméra:', error);
@@ -57,11 +60,12 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
 
   const startScanning = () => {
     setScanning(true);
-    // Simulation du scan continu
+    // Pour la démo, on simule la détection d'un QR code avec un code valide
     const scanInterval = setInterval(() => {
-      if (Math.random() > 0.97) { // 3% de chance de "détecter" un QR code
+      if (Math.random() > 0.95) { // 5% de chance de "détecter" un QR code
         clearInterval(scanInterval);
-        handleQRCodeDetected('demo_qr_code_12345');
+        // Utiliser un code QR qui existe vraiment dans la base de données
+        handleQRCodeDetected('test_qr_code_real');
       }
     }, 100);
 
@@ -97,8 +101,8 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
       // Simuler la lecture du QR code depuis l'image
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Pour la démo, on simule la détection d'un QR code
-      const mockQRCode = `uploaded_qr_${Date.now()}`;
+      // Pour la démo, on simule la détection d'un QR code valide
+      const mockQRCode = `test_qr_code_real`;
       await handleQRCodeDetected(mockQRCode);
       
     } catch (error) {
@@ -154,8 +158,18 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
       console.log('Validation result:', validationResult);
       console.log('Validation error:', validationError);
 
-      if (validationError || !validationResult?.accessGranted) {
+      if (validationError) {
         console.error('Erreur de validation:', validationError);
+        toast({
+          variant: "destructive",
+          title: "Erreur de validation",
+          description: "Erreur lors de la validation du QR code."
+        });
+        return;
+      }
+
+      if (!validationResult?.accessGranted) {
+        console.error('Accès refusé:', validationResult);
         toast({
           variant: "destructive",
           title: "QR Code invalide",

@@ -50,8 +50,12 @@ serve(async (req) => {
       );
     }
 
-    // Créer une session d'accès de 3 minutes
-    const expiresAt = new Date(Date.now() + 3 * 60 * 1000); // 3 minutes
+    // Créer une session d'accès de 30 minutes (changé de 3 minutes)
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+
+    // Extraire l'adresse IP correctement (prendre la première IP si plusieurs)
+    const forwardedFor = req.headers.get('x-forwarded-for');
+    const ipAddress = forwardedFor ? forwardedFor.split(',')[0].trim() : 'unknown';
 
     // Enregistrer l'accès
     const { error: logError } = await supabase
@@ -62,9 +66,9 @@ serve(async (req) => {
         details: { 
           qr_code_id: qrCodeData.id,
           access_type: 'emergency_medical_record',
-          session_duration: '3_minutes'
+          session_duration: '30_minutes'
         },
-        ip_address: req.headers.get('x-forwarded-for') || 'unknown'
+        ip_address: ipAddress
       });
 
     if (logError) {
