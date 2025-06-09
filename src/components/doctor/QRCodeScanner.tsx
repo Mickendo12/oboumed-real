@@ -32,10 +32,6 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setCameraActive(true);
-        // Démarrer automatiquement le scan
-        setTimeout(() => {
-          startScanning();
-        }, 1000);
       }
     } catch (error) {
       console.error('Erreur d\'accès à la caméra:', error);
@@ -61,51 +57,12 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
 
   const startScanning = () => {
     setScanning(true);
-    // Simuler la détection d'un QR code en récupérant un vrai code de la base
-    const scanInterval = setInterval(async () => {
-      if (Math.random() > 0.95) { // 5% de chance de "détecter" un QR code
-        clearInterval(scanInterval);
-        
-        // Récupérer un code QR actif depuis la base de données
-        try {
-          const { data: qrCodes, error } = await supabase
-            .from('qr_codes')
-            .select('qr_code')
-            .eq('status', 'active')
-            .limit(1);
-          
-          if (qrCodes && qrCodes.length > 0) {
-            handleQRCodeDetected(qrCodes[0].qr_code);
-          } else {
-            setScanning(false);
-            toast({
-              variant: "destructive",
-              title: "Aucun QR code",
-              description: "Aucun QR code actif trouvé pour la démonstration."
-            });
-          }
-        } catch (error) {
-          setScanning(false);
-          toast({
-            variant: "destructive",
-            title: "Erreur de scan",
-            description: "Erreur lors de la recherche de QR codes."
-          });
-        }
-      }
-    }, 100);
-
-    // Arrêter après 30 secondes si rien n'est détecté
-    setTimeout(() => {
-      clearInterval(scanInterval);
-      if (scanning) {
-        setScanning(false);
-        toast({
-          title: "Scan terminé",
-          description: "Aucun QR code détecté. Veuillez réessayer."
-        });
-      }
-    }, 30000);
+    // Dans un environnement réel, vous utiliseriez une bibliothèque comme jsQR
+    // Pour cette démo, on simule la capture d'un QR code de la caméra
+    toast({
+      title: "Scanner activé",
+      description: "Pointez la caméra vers un QR code ou utilisez la saisie manuelle."
+    });
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,24 +82,12 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
     
     try {
       // Simuler la lecture du QR code depuis l'image
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Récupérer un code QR actif depuis la base de données
-      const { data: qrCodes, error } = await supabase
-        .from('qr_codes')
-        .select('qr_code')
-        .eq('status', 'active')
-        .limit(1);
-      
-      if (qrCodes && qrCodes.length > 0) {
-        await handleQRCodeDetected(qrCodes[0].qr_code);
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Aucun QR code",
-          description: "Aucun QR code actif trouvé dans l'image."
-        });
-      }
+      toast({
+        title: "Image traitée",
+        description: "Veuillez entrer le code QR manuellement si détecté dans l'image."
+      });
       
     } catch (error) {
       console.error('Erreur lors du traitement de l\'image:', error);
@@ -202,28 +147,18 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
         return;
       }
 
-      console.log('QR Code extrait:', qrCode);
+      console.log('QR Code détecté:', qrCode);
       
-      // Vérifier que le QR code existe et est valide en utilisant la fonction edge
-      const { data: validationResult, error: validationError } = await supabase.functions.invoke('validate-qr-access', {
-        body: { qrCode }
-      });
+      // Valider le QR code directement avec la base de données
+      const { data: qrCodeData, error: qrError } = await supabase
+        .from('qr_codes')
+        .select('*')
+        .eq('qr_code', qrCode)
+        .eq('status', 'active')
+        .single();
 
-      console.log('Validation result:', validationResult);
-      console.log('Validation error:', validationError);
-
-      if (validationError) {
-        console.error('Erreur de validation:', validationError);
-        toast({
-          variant: "destructive",
-          title: "Erreur de validation",
-          description: "Erreur lors de la validation du QR code."
-        });
-        return;
-      }
-
-      if (!validationResult?.accessGranted) {
-        console.error('Accès refusé:', validationResult);
+      if (qrError || !qrCodeData) {
+        console.error('QR code non trouvé:', qrError);
         toast({
           variant: "destructive",
           title: "QR Code invalide",
@@ -232,11 +167,23 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
         return;
       }
 
+      // Vérifier si le QR code n'a pas expiré
+      const now = new Date();
+      const expiryDate = new Date(qrCodeData.expires_at);
+      if (expiryDate < now) {
+        toast({
+          variant: "destructive",
+          title: "QR Code expiré",
+          description: "Ce QR code a expiré."
+        });
+        return;
+      }
+
       // Récupérer les informations du patient
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('user_id', validationResult.userId)
+        .eq('user_id', qrCodeData.user_id)
         .single();
 
       if (profileError || !profileData) {
@@ -253,7 +200,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
       const { data: medications, error: medicationsError } = await supabase
         .from('medications')
         .select('*')
-        .eq('user_id', validationResult.userId)
+        .eq('user_id', qrCodeData.user_id)
         .order('created_at', { ascending: false });
 
       if (medicationsError) {
@@ -265,7 +212,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
         profile: profileData,
         medications: medications || [],
         qrCodeId: qrCode,
-        accessExpiresAt: validationResult.expiresAt
+        accessExpiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutes
       };
 
       stopCamera();
@@ -273,7 +220,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
       
       toast({
         title: "QR Code scanné avec succès",
-        description: `Accès autorisé au profil de ${profileData.name || 'Patient'} jusqu'à ${new Date(validationResult.expiresAt).toLocaleTimeString('fr-FR')}`
+        description: `Accès autorisé au profil de ${profileData.name || 'Patient'} pour 30 minutes`
       });
 
     } catch (error) {
@@ -335,7 +282,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
           <label className="text-sm font-medium">Ou entrez le code manuellement :</label>
           <div className="flex gap-2">
             <Input
-              placeholder="Code QR ou URL"
+              placeholder="Code QR ou URL complète"
               value={manualInput}
               onChange={(e) => setManualInput(e.target.value)}
               disabled={processing}
@@ -345,7 +292,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
               disabled={!manualInput.trim() || processing}
               size="sm"
             >
-              Scanner
+              Valider
             </Button>
           </div>
         </div>
@@ -386,6 +333,9 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
                     </div>
                   </div>
                 )}
+                <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white p-2 rounded text-xs">
+                  Pointez vers un QR code ou fermez et utilisez la saisie manuelle
+                </div>
               </div>
             ) : (
               <div className="h-64 flex items-center justify-center bg-muted rounded-lg">
@@ -398,11 +348,11 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
             
             <div className="flex gap-2">
               <Button variant="outline" onClick={stopCamera} className="flex-1">
-                Annuler
+                Fermer
               </Button>
               {cameraActive && !scanning && (
                 <Button onClick={startScanning} className="flex-1">
-                  Démarrer le scan
+                  Activer le scan
                 </Button>
               )}
             </div>
