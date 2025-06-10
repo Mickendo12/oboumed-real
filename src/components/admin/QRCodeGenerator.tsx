@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -37,12 +36,12 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
       const qrCodeRecord = await generateQRCodeForUser(userId);
       setQrCodeText(qrCodeRecord.qr_code);
       
-      // Créer l'URL publique pour accéder au dossier médical
-      const medicalRecordUrl = `${window.location.origin}/medical-record/${qrCodeRecord.qr_code}`;
-      setPublicUrl(medicalRecordUrl);
+      // Créer une URL courte et sécurisée - juste le code sans préfixe
+      const shortUrl = `${window.location.origin}/qr/${qrCodeRecord.qr_code}`;
+      setPublicUrl(shortUrl);
       
-      // Générer l'image QR code avec l'URL publique
-      const qrCodeImage = await QRCode.toDataURL(medicalRecordUrl, {
+      // Générer l'image QR code avec seulement le code
+      const qrCodeImage = await QRCode.toDataURL(qrCodeRecord.qr_code, {
         width: 300,
         margin: 2,
         color: {
@@ -56,7 +55,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
       
       toast({
         title: "QR Code généré",
-        description: "Le code QR d'accès au dossier médical a été généré avec succès."
+        description: "Le code QR d'accès médical a été généré avec succès."
       });
     } catch (error) {
       console.error('Error generating QR code:', error);
@@ -158,7 +157,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
               <div className="flex justify-center">
                 <img 
                   src={qrCodeDataUrl} 
-                  alt="QR Code d'accès au dossier médical" 
+                  alt="QR Code d'accès médical" 
                   className="border rounded-lg max-w-full h-auto"
                   style={{ maxWidth: '280px' }}
                 />
@@ -166,13 +165,13 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
               
               <div className="text-center space-y-2">
                 <p className="text-sm text-muted-foreground">
-                  QR Code permanent - Accès médical d'urgence (3 min par session)
+                  QR Code médical sécurisé - Accès limité aux médecins autorisés (30 min par session)
                 </p>
                 <div className="text-xs font-mono bg-muted p-2 rounded break-all overflow-wrap-anywhere">
                   {publicUrl}
                 </div>
                 <p className="text-xs text-muted-foreground break-all">
-                  Code unique: {qrCodeText}
+                  Code: {qrCodeText}
                 </p>
               </div>
               
@@ -196,15 +195,6 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
               </div>
               
               <div className="flex flex-col sm:flex-row gap-2">
-                <Button 
-                  onClick={openPublicUrl}
-                  variant="outline"
-                  className="flex-1"
-                  size="sm"
-                >
-                  <ExternalLink size={16} className="mr-2" />
-                  Tester l'accès
-                </Button>
                 <Button 
                   onClick={generateQRCode}
                   variant="secondary"
