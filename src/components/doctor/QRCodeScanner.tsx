@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { QrCode, Camera, Upload, AlertCircle } from 'lucide-react';
+import { QrCode, Camera, Type, AlertCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { validateQRCode, getUserProfile } from '@/services/supabaseService';
 
@@ -13,10 +13,10 @@ interface QRCodeScannerProps {
 
 const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
   const [isScanning, setIsScanning] = useState(false);
+  const [manualCode, setManualCode] = useState('');
   const [loading, setLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const stopCamera = () => {
@@ -43,65 +43,8 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
       toast({
         variant: "destructive",
         title: "Erreur caméra",
-        description: "Impossible d'accéder à la caméra. Veuillez utiliser l'importation de fichier."
+        description: "Impossible d'accéder à la caméra. Veuillez utiliser la saisie manuelle."
       });
-    }
-  };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast({
-        variant: "destructive",
-        title: "Fichier invalide",
-        description: "Veuillez sélectionner une image contenant un QR code."
-      });
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const imageSrc = e.target?.result as string;
-      await processQRCodeFromImage(imageSrc);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const processQRCodeFromImage = async (imageSrc: string) => {
-    try {
-      setLoading(true);
-      
-      // Créer une image pour traiter le QR code
-      const img = new Image();
-      img.onload = async () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
-
-        // Pour la démo, simuler l'extraction du QR code
-        // En production, utilisez une bibliothèque comme jsQR
-        toast({
-          variant: "destructive",
-          title: "Fonctionnalité en développement",
-          description: "Le scan d'image QR sera bientôt disponible. Utilisez la caméra pour le moment."
-        });
-      };
-      img.src = imageSrc;
-    } catch (error) {
-      console.error('Erreur lors du traitement de l\'image:', error);
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Impossible de traiter l'image."
-      });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -183,13 +126,26 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
     }
   };
 
+  const handleManualSubmit = () => {
+    if (!manualCode.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Code requis",
+        description: "Veuillez saisir un code QR."
+      });
+      return;
+    }
+    
+    processQRCode(manualCode.trim());
+  };
+
   // Simulation d'un scan depuis la vidéo (pour demo - en production, utilisez une vraie librairie de scan)
   const simulateScan = () => {
     // En production, intégrez ici une vraie librairie de scan QR comme zxing-js
     toast({
       variant: "destructive",
       title: "Scanner non implémenté",
-      description: "Veuillez utiliser l'importation de fichier pour le moment."
+      description: "Veuillez utiliser la saisie manuelle pour le moment."
     });
     stopCamera();
   };
@@ -233,22 +189,22 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
               </div>
               
               <div className="space-y-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-                <Button 
-                  onClick={() => fileInputRef.current?.click()}
-                  variant="outline"
-                  className="w-full"
-                  disabled={loading}
-                >
-                  <Upload size={16} className="mr-2" />
-                  Importer une image QR
-                </Button>
+                <label className="text-sm font-medium">Saisie manuelle du code :</label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Saisissez le code QR..."
+                    value={manualCode}
+                    onChange={(e) => setManualCode(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleManualSubmit()}
+                  />
+                  <Button 
+                    onClick={handleManualSubmit}
+                    disabled={loading || !manualCode.trim()}
+                  >
+                    <Type size={16} className="mr-2" />
+                    Scanner
+                  </Button>
+                </div>
               </div>
             </div>
           ) : (
