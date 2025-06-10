@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,7 +8,6 @@ import Privacy from "./pages/Privacy";
 import DataConfig from "./pages/DataConfig";
 import NotFound from "./pages/NotFound";
 import PublicPatientProfile from '@/components/public/PublicPatientProfile';
-import SecureQRRedirect from '@/components/public/SecureQRRedirect';
 
 const queryClient = new QueryClient();
 
@@ -26,7 +24,6 @@ function App() {
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/data-config" element={<DataConfig />} />
               <Route path="/medical-record/:qrCode" element={<PublicPatientProfile />} />
-              <Route path="/qr/:qrCode" element={<SecureQRRedirect />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
