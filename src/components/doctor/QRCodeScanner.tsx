@@ -2,10 +2,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { QrCode, Camera, Upload, AlertCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { validateQRCode, getUserProfile } from '@/services/supabaseService';
-import jsQR from 'jsqr';
 
 interface QRCodeScannerProps {
   onScanSuccess: (patientData: any) => void;
@@ -73,52 +73,25 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
     try {
       setLoading(true);
       
+      // Créer une image pour traiter le QR code
       const img = new Image();
       img.onload = async () => {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          toast({
-            variant: "destructive",
-            title: "Erreur",
-            description: "Impossible de traiter l'image."
-          });
-          setLoading(false);
-          return;
-        }
+        if (!ctx) return;
 
         canvas.width = img.width;
         canvas.height = img.height;
         ctx.drawImage(img, 0, 0);
 
-        // Extraire les données de l'image
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        
-        // Utiliser jsQR pour décoder le QR code
-        const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
-        
-        if (qrCode) {
-          console.log('QR Code détecté:', qrCode.data);
-          await processQRCode(qrCode.data);
-        } else {
-          toast({
-            variant: "destructive",
-            title: "Aucun QR code détecté",
-            description: "Aucun code QR n'a été trouvé dans cette image. Assurez-vous que l'image contient un QR code visible."
-          });
-        }
-        setLoading(false);
-      };
-      
-      img.onerror = () => {
+        // Pour la démo, simuler l'extraction du QR code
+        // En production, utilisez une bibliothèque comme jsQR
         toast({
           variant: "destructive",
-          title: "Erreur",
-          description: "Impossible de charger l'image."
+          title: "Fonctionnalité en développement",
+          description: "Le scan d'image QR sera bientôt disponible. Utilisez la caméra pour le moment."
         });
-        setLoading(false);
       };
-      
       img.src = imageSrc;
     } catch (error) {
       console.error('Erreur lors du traitement de l\'image:', error);
@@ -127,6 +100,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
         title: "Erreur",
         description: "Impossible de traiter l'image."
       });
+    } finally {
       setLoading(false);
     }
   };
