@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { ReminderDB, ReminderInput } from '@/types/reminder';
 
@@ -277,7 +276,7 @@ export const validateQRCode = async (qrCode: string): Promise<{ valid: boolean; 
 export const createDoctorSession = async (patientId: string, doctorId: string, qrCodeId?: string): Promise<DoctorAccessSession> => {
   console.log('Creating doctor session:', { patientId, doctorId, qrCodeId });
   
-  // Créer directement la session sans utiliser une fonction RPC
+  // Créer directement la session - les politiques RLS permettront l'accès pour les médecins
   const sessionData = {
     patient_id: patientId,
     doctor_id: doctorId,
