@@ -5,6 +5,7 @@ export interface QRCode {
   id: string;
   user_id: string;
   qr_code: string;
+  access_key: string; // Nouvelle clé d'accès unique
   status: 'active' | 'expired' | 'used';
   expires_at: string;
   created_by?: string;
@@ -31,6 +32,9 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
     .update({ status: 'expired' })
     .eq('user_id', userId);
 
+  // Générer une clé d'accès unique de 12 caractères
+  const accessKey = Math.random().toString(36).substring(2, 14).toUpperCase();
+  
   const { data: qrCodeText, error: funcError } = await supabase.rpc('generate_qr_code', {
     patient_user_id: userId
   });
@@ -44,8 +48,9 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
     .insert({
       user_id: userId,
       qr_code: qrCodeText,
+      access_key: accessKey,
       status: 'active',
-      expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 an (QR permanent)
+      expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 an
     })
     .select()
     .single();
@@ -98,5 +103,35 @@ export const validateQRCode = async (qrCode: string): Promise<{ valid: boolean; 
   }
   
   console.log('QR code valid for user:', data.user_id);
+  return { valid: true, userId: data.user_id };
+};
+
+export const validateAccessKey = async (accessKey: string): Promise<{ valid: boolean; userId?: string }> => {
+  console.log('Validating access key:', accessKey);
+  
+  const { data, error } = await supabase
+    .from('qr_codes')
+    .select('user_id, status, expires_at')
+    .eq('access_key', accessKey.toUpperCase())
+    .eq('status', 'active')
+    .maybeSingle();
+    
+  if (error) {
+    console.error('Error validating access key:', error);
+    return { valid: false };
+  }
+  
+  if (!data) {
+    console.log('Access key not found or inactive');
+    return { valid: false };
+  }
+  
+  const isExpired = new Date(data.expires_at) < new Date();
+  if (isExpired) {
+    console.log('Access key expired');
+    return { valid: false };
+  }
+  
+  console.log('Access key valid for user:', data.user_id);
   return { valid: true, userId: data.user_id };
 };

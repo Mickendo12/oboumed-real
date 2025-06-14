@@ -2,6 +2,16 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ReminderDB, ReminderInput } from '@/types/reminder';
 
+// Types pour la conversion
+export interface ReminderForm {
+  id: string;
+  title: string;
+  medicationName: string;
+  time: string;
+  dosage: string;
+  frequency: string;
+}
+
 export const getRemindersForUser = async (userId: string): Promise<ReminderDB[]> => {
   const { data, error } = await supabase
     .from('reminders')
@@ -39,4 +49,26 @@ export const deleteReminder = async (id: string): Promise<void> => {
   if (error) {
     throw error;
   }
+};
+
+// Fonctions de conversion pour compatibilité
+export const convertDBReminderToForm = (reminder: ReminderDB): ReminderForm => {
+  return {
+    id: reminder.id,
+    title: `${reminder.medication_name} - ${reminder.dosage}`,
+    medicationName: reminder.medication_name,
+    time: reminder.time,
+    dosage: reminder.dosage,
+    frequency: reminder.frequency
+  };
+};
+
+export const convertFormReminderToDB = (reminder: Omit<ReminderForm, 'id' | 'title'>, userId: string): ReminderInput => {
+  return {
+    user_id: userId,
+    medication_name: reminder.medicationName,
+    time: reminder.time,
+    dosage: reminder.dosage,
+    frequency: reminder.frequency
+  };
 };

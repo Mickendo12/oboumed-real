@@ -1,3 +1,4 @@
+
 // Re-export all services for backwards compatibility
 export * from './profileService';
 export * from './medicationService';
@@ -26,3 +27,7 @@ export type {
 export type {
   AccessLog,
 } from './accessLogService';
+
+export type {
+  ReminderForm,
+} from './reminderService';

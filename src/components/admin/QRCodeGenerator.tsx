@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { QrCode, Download, User, ExternalLink } from 'lucide-react';
+import { QrCode, Download, User, ExternalLink, Key } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import QRCode from 'qrcode';
 import { generateQRCodeForUser } from '@/services/supabaseService';
@@ -24,6 +25,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
 }) => {
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
   const [qrCodeText, setQrCodeText] = useState<string>('');
+  const [accessKey, setAccessKey] = useState<string>('');
   const [publicUrl, setPublicUrl] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -35,6 +37,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
       // Générer le code QR dans la base de données
       const qrCodeRecord = await generateQRCodeForUser(userId);
       setQrCodeText(qrCodeRecord.qr_code);
+      setAccessKey(qrCodeRecord.access_key);
       
       // Créer une URL courte et sécurisée - juste le code sans préfixe
       const shortUrl = `${window.location.origin}/qr/${qrCodeRecord.qr_code}`;
@@ -85,6 +88,24 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
     });
   };
 
+  const copyAccessKey = async () => {
+    if (!accessKey) return;
+    
+    try {
+      await navigator.clipboard.writeText(accessKey);
+      toast({
+        title: "Clé d'accès copiée",
+        description: "La clé d'accès au dossier médical a été copiée."
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de copier la clé d'accès."
+      });
+    }
+  };
+
   const copyUrl = async () => {
     if (!publicUrl) return;
     
@@ -103,15 +124,10 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
     }
   };
 
-  const openPublicUrl = () => {
-    if (publicUrl) {
-      window.open(publicUrl, '_blank');
-    }
-  };
-
   const handleClose = () => {
     setQrCodeDataUrl('');
     setQrCodeText('');
+    setAccessKey('');
     setPublicUrl('');
     onClose();
   };
@@ -122,7 +138,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-sm sm:text-base">
             <QrCode size={20} />
-            Générer un QR Code d'accès médical
+            Générer un accès médical sécurisé
           </DialogTitle>
         </DialogHeader>
         
@@ -150,10 +166,39 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
               className="w-full"
             >
               <QrCode size={16} className="mr-2" />
-              {loading ? 'Génération...' : 'Générer le QR Code d\'accès'}
+              {loading ? 'Génération...' : 'Générer l\'accès médical sécurisé'}
             </Button>
           ) : (
             <div className="space-y-4">
+              {/* Clé d'accès */}
+              <Card className="bg-blue-50 dark:bg-blue-900/20">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2 text-blue-800 dark:text-blue-200">
+                    <Key size={16} />
+                    Clé d'accès médical
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="text-center space-y-2">
+                    <div className="text-2xl font-mono font-bold bg-white dark:bg-gray-800 p-3 rounded border">
+                      {accessKey}
+                    </div>
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                      Cette clé permet aux médecins d'accéder au dossier médical sans scanner le QR code
+                    </p>
+                    <Button 
+                      onClick={copyAccessKey}
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                    >
+                      📋 Copier la clé d'accès
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* QR Code */}
               <div className="flex justify-center">
                 <img 
                   src={qrCodeDataUrl} 
@@ -182,7 +227,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
                   size="sm"
                 >
                   <Download size={16} className="mr-2" />
-                  Télécharger
+                  Télécharger QR
                 </Button>
                 <Button 
                   onClick={copyUrl}
