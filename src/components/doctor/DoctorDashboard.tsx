@@ -1,15 +1,15 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { QrCode, Clock, User, Stethoscope } from 'lucide-react';
+import { Clock, User, Stethoscope } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import QRCodeScanner from './QRCodeScanner';
+import AccessKeyVerification from './AccessKeyVerification';
 import PatientProfile from './PatientProfile';
 import { 
   getActiveDoctorSessions, 
-  createDoctorSession,
   logAccess,
   DoctorAccessSession 
 } from '@/services/supabaseService';
@@ -47,7 +47,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ userId }) => {
     }
   };
 
-  const handleQRCodeScan = async (patientData: any) => {
+  const handleAccessGranted = async (patientData: any) => {
     try {
       console.log('Received patient data in dashboard:', patientData);
       
@@ -62,55 +62,23 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ userId }) => {
         return;
       }
 
-      const { profile, qrCodeId } = patientData;
+      const { profile } = patientData;
       const patientUserId = profile.user_id;
       
-      console.log('Creating doctor session for patient:', patientUserId);
+      console.log('Access granted for patient:', patientUserId);
       
-      try {
-        // Créer une session d'accès
-        const session = await createDoctorSession(patientUserId, userId, qrCodeId);
-        console.log('Doctor session created successfully:', session);
-        
-        // Enregistrer l'accès
-        await logAccess({
-          patient_id: patientUserId,
-          doctor_id: userId,
-          action: 'qr_scan',
-          details: { 
-            qr_code_id: qrCodeId,
-            patient_name: profile.name || profile.email,
-            access_type: 'doctor_dashboard_scan',
-            session_id: session.id
-          }
-        });
-
-        // Actualiser les sessions
-        await loadActiveSessions();
-        
-        // Sélectionner le patient
-        setSelectedPatientId(patientUserId);
-
-        toast({
-          title: "Accès accordé",
-          description: `Accès au dossier de ${profile.name || profile.email} pour 30 minutes.`
-        });
-        
-      } catch (sessionError) {
-        console.error('Error creating session:', sessionError);
-        toast({
-          variant: "destructive",
-          title: "Erreur de session",
-          description: "Impossible de créer la session d'accès. Vérifiez vos permissions."
-        });
-      }
+      // Actualiser les sessions
+      await loadActiveSessions();
+      
+      // Sélectionner le patient
+      setSelectedPatientId(patientUserId);
       
     } catch (error) {
-      console.error('Error processing QR code scan:', error);
+      console.error('Error processing access grant:', error);
       toast({
         variant: "destructive",
         title: "Erreur de traitement",
-        description: `Impossible de traiter les données du patient: ${error.message || 'Erreur inconnue'}`
+        description: `Impossible de traiter l'accès patient: ${error.message || 'Erreur inconnue'}`
       });
     }
   };
@@ -158,14 +126,10 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ userId }) => {
 
         <TabsContent value="sessions">
           <div className="space-y-6">
-            <Card className="dark-container">
-              <CardHeader>
-                <CardTitle>Scanner QR Code Patient</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <QRCodeScanner onScanSuccess={handleQRCodeScan} />
-              </CardContent>
-            </Card>
+            <AccessKeyVerification 
+              onAccessGranted={handleAccessGranted}
+              doctorId={userId}
+            />
 
             <Card className="dark-container">
               <CardHeader>
@@ -176,7 +140,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ userId }) => {
                   <div className="text-center py-8">
                     <Stethoscope size={48} className="mx-auto mb-4 text-muted-foreground" />
                     <p className="text-muted-foreground">
-                      Aucune session active. Scannez un code QR pour accéder à un dossier médical.
+                      Aucune session active. Utilisez la clé d'accès pour accéder à un dossier médical.
                     </p>
                   </div>
                 ) : (

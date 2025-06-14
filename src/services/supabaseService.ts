@@ -303,6 +303,37 @@ export const validateQRCode = async (qrCode: string): Promise<{ valid: boolean; 
   return { valid: true, userId: data.user_id };
 };
 
+// Nouvelle fonction pour valider une clé d'accès
+export const validateAccessKey = async (accessKey: string): Promise<{ valid: boolean; userId?: string }> => {
+  console.log('Validating access key:', accessKey);
+  
+  const { data, error } = await supabase
+    .from('qr_codes')
+    .select('user_id, status, expires_at')
+    .eq('access_key', accessKey)
+    .eq('status', 'active')
+    .maybeSingle();
+    
+  if (error) {
+    console.error('Error validating access key:', error);
+    return { valid: false };
+  }
+  
+  if (!data) {
+    console.log('Access key not found or inactive');
+    return { valid: false };
+  }
+  
+  const isExpired = new Date(data.expires_at) < new Date();
+  if (isExpired) {
+    console.log('Access key expired');
+    return { valid: false };
+  }
+  
+  console.log('Access key valid for user:', data.user_id);
+  return { valid: true, userId: data.user_id };
+};
+
 // Doctor access session functions
 export const createDoctorSession = async (patientId: string, doctorId: string, qrCodeId?: string): Promise<DoctorAccessSession> => {
   console.log('Creating doctor session:', { patientId, doctorId, qrCodeId });
