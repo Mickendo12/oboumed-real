@@ -50,6 +50,7 @@ export interface QRCode {
   id: string;
   user_id: string;
   qr_code: string;
+  access_key: string;
   status: 'active' | 'expired' | 'used';
   expires_at: string;
   created_by?: string;

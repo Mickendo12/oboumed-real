@@ -20,7 +20,7 @@ const AdminDashboard: React.FC = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [accessLogs, setAccessLogs] = useState<AccessLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedUserForQR, setSelectedUserForQR] = useState<Profile | null>(null);
+  const [showQRGenerator, setShowQRGenerator] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -134,6 +134,10 @@ const AdminDashboard: React.FC = () => {
             <Activity size={16} className="mr-2" />
             Logs d'accès
           </TabsTrigger>
+          <TabsTrigger value="qr">
+            <QrCode size={16} className="mr-2" />
+            Codes QR
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="users">
@@ -175,14 +179,6 @@ const AdminDashboard: React.FC = () => {
                             onClick={() => handleRestrictAccess(profile.user_id, profile.access_status === 'restricted')}
                           >
                             {profile.access_status === 'restricted' ? 'Activer' : 'Restreindre'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setSelectedUserForQR(profile)}
-                          >
-                            <QrCode size={16} className="mr-1" />
-                            QR
                           </Button>
                           {profile.role === 'user' && (
                             <Button
@@ -245,17 +241,11 @@ const AdminDashboard: React.FC = () => {
             </CardContent>
           </Card>
         </TabsContent>
-      </Tabs>
 
-      {selectedUserForQR && (
-        <QRCodeGenerator
-          userId={selectedUserForQR.user_id}
-          userName={selectedUserForQR.name || ''}
-          userEmail={selectedUserForQR.email}
-          isOpen={!!selectedUserForQR}
-          onClose={() => setSelectedUserForQR(null)}
-        />
-      )}
+        <TabsContent value="qr">
+          <QRCodeGenerator />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
