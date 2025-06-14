@@ -91,10 +91,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
         canvas.height = img.height;
         ctx.drawImage(img, 0, 0);
 
-        // Extraire les données de l'image
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        
-        // Utiliser jsQR pour décoder le QR code
         const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
         
         if (qrCode) {
@@ -104,7 +101,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
           toast({
             variant: "destructive",
             title: "Aucun QR code détecté",
-            description: "Aucun code QR n'a été trouvé dans cette image. Assurez-vous que l'image contient un QR code visible."
+            description: "Aucun code QR n'a été trouvé dans cette image."
           });
         }
         setLoading(false);
@@ -135,7 +132,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
     try {
       setLoading(true);
       
-      // Nettoyer le code QR (enlever les préfixes d'URL si présents)
+      // Nettoyer le code QR
       let cleanCode = qrCodeValue.trim();
       
       // Si c'est une URL de notre système, extraire le code
@@ -144,10 +141,11 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
         cleanCode = parts[parts.length - 1];
       }
       
-      console.log('Code QR à traiter:', cleanCode);
+      console.log('Processing QR code:', cleanCode);
       
-      // Valider le QR code en base de données
+      // Valider le QR code
       const validation = await validateQRCode(cleanCode);
+      console.log('QR validation result:', validation);
       
       if (!validation.valid || !validation.userId) {
         toast({
@@ -160,6 +158,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
       
       // Récupérer le profil du patient
       const profile = await getUserProfile(validation.userId);
+      console.log('Patient profile:', profile);
       
       if (!profile) {
         toast({
@@ -170,54 +169,45 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
         return;
       }
       
-      // Vérifier si l'accès du patient n'est pas restreint
+      // Vérifier l'accès
       if (profile.access_status === 'restricted') {
         toast({
           variant: "destructive",
           title: "Accès restreint",
-          description: "L'accès au dossier de ce patient a été restreint par l'administration."
+          description: "L'accès au dossier de ce patient a été restreint."
         });
         return;
       }
       
-      // Données du patient pour l'accès
+      // Préparer les données dans le format attendu par DoctorDashboard
       const patientData = {
         profile: profile,
         qrCodeId: cleanCode
       };
       
-      // Arrêter la caméra si elle était active
+      console.log('Sending patient data to parent:', patientData);
+      
+      // Arrêter la caméra
       stopCamera();
       
-      // Notifier le composant parent
+      // Envoyer les données au composant parent
       onScanSuccess(patientData);
       
       toast({
-        title: "Code QR valide",
-        description: `Accès accordé au dossier de ${profile.name || profile.email}`
+        title: "Accès accordé",
+        description: `Code QR valide pour ${profile.name || profile.email}`
       });
       
     } catch (error) {
       console.error('Erreur lors du traitement du QR code:', error);
       toast({
         variant: "destructive",
-        title: "Erreur",
-        description: "Impossible de traiter le code QR."
+        title: "Erreur de traitement",
+        description: `Impossible de traiter le code QR: ${error.message || 'Erreur inconnue'}`
       });
     } finally {
       setLoading(false);
     }
-  };
-
-  // Simulation d'un scan depuis la vidéo (pour demo - en production, utilisez une vraie librairie de scan)
-  const simulateScan = () => {
-    // En production, intégrez ici une vraie librairie de scan QR comme zxing-js
-    toast({
-      variant: "destructive",
-      title: "Scanner non implémenté",
-      description: "Veuillez utiliser l'importation de fichier pour le moment."
-    });
-    stopCamera();
   };
 
   useEffect(() => {
@@ -293,18 +283,12 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
               
               <div className="flex gap-2">
                 <Button 
-                  onClick={simulateScan}
-                  className="flex-1"
-                  disabled={loading}
-                >
-                  Scanner maintenant
-                </Button>
-                <Button 
                   onClick={stopCamera}
                   variant="outline"
                   disabled={loading}
+                  className="w-full"
                 >
-                  Arrêter
+                  Arrêter la caméra
                 </Button>
               </div>
               
@@ -312,7 +296,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
                 <div className="flex items-start gap-2">
                   <AlertCircle size={16} className="text-blue-600 mt-0.5" />
                   <p className="text-sm text-blue-800 dark:text-blue-200">
-                    Positionnez le code QR dans le cadre blanc pour le scanner.
+                    Positionnez le code QR dans le cadre pour le scanner.
                   </p>
                 </div>
               </div>
@@ -321,7 +305,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
           
           {loading && (
             <div className="text-center py-4">
-              <div className="animate-pulse">Traitement du code QR...</div>
+              <div className="animate-pulse">Traitement du code QR en cours...</div>
             </div>
           )}
         </CardContent>

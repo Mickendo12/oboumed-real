@@ -10,7 +10,6 @@ import QRCodeScanner from './QRCodeScanner';
 import PatientProfile from './PatientProfile';
 import { 
   getActiveDoctorSessions, 
-  validateQRCode, 
   createDoctorSession,
   logAccess,
   DoctorAccessSession 
@@ -28,7 +27,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ userId }) => {
 
   useEffect(() => {
     loadActiveSessions();
-    const interval = setInterval(loadActiveSessions, 30000); // Refresh every 30 seconds
+    const interval = setInterval(loadActiveSessions, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -50,42 +49,66 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ userId }) => {
 
   const handleQRCodeScan = async (patientData: any) => {
     try {
-      if (!patientData.profile) {
+      console.log('Received patient data in dashboard:', patientData);
+      
+      // Vérifier que les données sont valides
+      if (!patientData || !patientData.profile) {
+        console.error('Invalid patient data structure:', patientData);
         toast({
           variant: "destructive",
           title: "Données invalides",
-          description: "Les données du patient ne sont pas valides."
+          description: "Les données du patient ne sont pas dans le bon format."
         });
         return;
       }
 
-      // Create doctor session
-      const session = await createDoctorSession(patientData.profile.user_id, userId);
+      const { profile, qrCodeId } = patientData;
       
-      // Log the access
+      if (!profile.user_id) {
+        console.error('Missing user_id in profile:', profile);
+        toast({
+          variant: "destructive",
+          title: "Données incomplètes",
+          description: "L'identifiant du patient est manquant."
+        });
+        return;
+      }
+
+      console.log('Creating doctor session for patient:', profile.user_id);
+      
+      // Créer une session d'accès
+      const session = await createDoctorSession(profile.user_id, userId);
+      console.log('Doctor session created:', session);
+      
+      // Enregistrer l'accès
       await logAccess({
-        patient_id: patientData.profile.user_id,
+        patient_id: profile.user_id,
         doctor_id: userId,
         action: 'qr_scan',
-        details: { qr_code_id: patientData.qrCodeId }
+        details: { 
+          qr_code_id: qrCodeId,
+          patient_name: profile.name || profile.email,
+          access_type: 'doctor_dashboard_scan'
+        }
       });
 
-      // Refresh sessions
+      // Actualiser les sessions
       await loadActiveSessions();
       
-      // Set selected patient
-      setSelectedPatientId(patientData.profile.user_id);
+      // Sélectionner le patient
+      setSelectedPatientId(profile.user_id);
 
       toast({
         title: "Accès accordé",
-        description: "Vous avez maintenant accès au dossier médical pour 30 minutes."
+        description: `Accès au dossier de ${profile.name || profile.email} pour 30 minutes.`
       });
+      
     } catch (error) {
       console.error('Error processing QR code scan:', error);
       toast({
         variant: "destructive",
-        title: "Erreur",
-        description: "Impossible de traiter les données du patient."
+        title: "Erreur de traitement",
+        description: `Impossible de traiter les données du patient: ${error.message || 'Erreur inconnue'}`
       });
     }
   };
