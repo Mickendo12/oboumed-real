@@ -86,14 +86,21 @@ export const getUserProfile = async (userId: string): Promise<Profile | null> =>
     .from('profiles')
     .select('*')
     .eq('user_id', userId)
-    .single();
-    
+    .maybeSingle();
+
   if (error) {
     console.error('Error fetching user profile:', error);
     return null;
   }
-  
-  return data;
+
+  if (!data) return null;
+
+  // Correction : cast explicite du champ 'role'
+  return {
+    ...data,
+    role: (data.role ?? 'user') as 'admin' | 'doctor' | 'user',
+    access_status: (data.access_status ?? 'active') as 'active' | 'restricted' | 'expired',
+  };
 };
 
 export const getUserProfileWithBMI = async (userId: string): Promise<ProfileWithBMI | null> => {
@@ -101,14 +108,20 @@ export const getUserProfileWithBMI = async (userId: string): Promise<ProfileWith
     .from('profiles_with_bmi')
     .select('*')
     .eq('user_id', userId)
-    .single();
-    
+    .maybeSingle();
+
   if (error) {
     console.error('Error fetching user profile with BMI:', error);
     return null;
   }
-  
-  return data;
+
+  if (!data) return null;
+
+  return {
+    ...data,
+    role: (data.role ?? 'user') as 'admin' | 'doctor' | 'user',
+    access_status: (data.access_status ?? 'active') as 'active' | 'restricted' | 'expired',
+  };
 };
 
 export const updateUserProfile = async (userId: string, updates: Partial<Profile>): Promise<void> => {
@@ -116,7 +129,7 @@ export const updateUserProfile = async (userId: string, updates: Partial<Profile
     .from('profiles')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('user_id', userId);
-    
+
   if (error) {
     throw error;
   }
@@ -127,12 +140,16 @@ export const getAllProfiles = async (): Promise<Profile[]> => {
     .from('profiles')
     .select('*')
     .order('created_at', { ascending: false });
-    
+
   if (error) {
     throw error;
   }
-  
-  return data || [];
+
+  return (data || []).map(p => ({
+    ...p,
+    role: (p.role ?? 'user') as 'admin' | 'doctor' | 'user',
+    access_status: (p.access_status ?? 'active') as 'active' | 'restricted' | 'expired',
+  }));
 };
 
 // Medication functions with proper RLS handling
@@ -142,12 +159,12 @@ export const getMedicationsForUser = async (userId: string): Promise<Medication[
     .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
-    
+
   if (error) {
     console.error('Error fetching medications:', error);
     throw error;
   }
-  
+
   return data || [];
 };
 
@@ -157,12 +174,12 @@ export const addMedication = async (medication: Omit<Medication, 'id' | 'created
     .insert(medication)
     .select()
     .single();
-    
+
   if (error) {
     console.error('Error adding medication:', error);
     throw error;
   }
-  
+
   return data;
 };
 
@@ -173,28 +190,46 @@ export const getRemindersForUser = async (userId: string): Promise<ReminderDB[]>
     .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
-    
+
   if (error) {
     console.error('Error fetching reminders:', error);
     throw error;
   }
-  
-  return data || [];
+
+  // Ajout champ 'frequency' manquant en le reconstituant depuis days_of_week
+  return (data || []).map((reminder: any) => ({
+    ...reminder,
+    frequency:
+      Array.isArray(reminder.days_of_week) && reminder.days_of_week.length === 7
+        ? 'Tous les jours'
+        : Array.isArray(reminder.days_of_week)
+        ? reminder.days_of_week.join(',')
+        : '',
+  }));
 };
 
-export const addReminder = async (reminder: ReminderInput): Promise<ReminderDB> => {
+export const addReminder = async (reminder: ReminderInput & { days_of_week: number[] }): Promise<ReminderDB> => {
+  // Rappel : ReminderInput doit contenir days_of_week désormais (adaptation)
   const { data, error } = await supabase
     .from('reminders')
     .insert(reminder)
     .select()
     .single();
-    
+
   if (error) {
     console.error('Error adding reminder:', error);
     throw error;
   }
-  
-  return data;
+
+  return {
+    ...data,
+    frequency:
+      Array.isArray(data.days_of_week) && data.days_of_week.length === 7
+        ? 'Tous les jours'
+        : Array.isArray(data.days_of_week)
+        ? data.days_of_week.join(',')
+        : '',
+  };
 };
 
 export const deleteReminder = async (id: string): Promise<void> => {
@@ -202,7 +237,7 @@ export const deleteReminder = async (id: string): Promise<void> => {
     .from('reminders')
     .delete()
     .eq('id', id);
-    
+
   if (error) {
     console.error('Error deleting reminder:', error);
     throw error;
@@ -217,11 +252,14 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
     .select('*')
     .eq('user_id', userId)
     .eq('status', 'active')
-    .single();
+    .maybeSingle();
 
   // Si un QR code actif existe déjà, le retourner
   if (existingQRCode) {
-    return existingQRCode;
+    return {
+      ...existingQRCode,
+      status: (existingQRCode.status ?? 'active') as 'active' | 'expired' | 'used',
+    };
   }
 
   // Marquer tous les anciens QR codes comme expirés
@@ -256,7 +294,10 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
     throw error;
   }
   
-  return data;
+  return {
+    ...data,
+    status: (data.status ?? 'active') as 'active' | 'expired' | 'used',
+  };
 };
 
 export const getQRCodesForUser = async (userId: string): Promise<QRCode[]> => {
@@ -265,13 +306,16 @@ export const getQRCodesForUser = async (userId: string): Promise<QRCode[]> => {
     .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
-    
+
   if (error) {
     console.error('Error fetching QR codes:', error);
     throw error;
   }
-  
-  return data || [];
+
+  return (data || []).map((q: any) => ({
+    ...q,
+    status: (q.status ?? 'active') as 'active' | 'expired' | 'used',
+  }));
 };
 
 export const validateQRCode = async (qrCode: string): Promise<{ valid: boolean; userId?: string }> => {
