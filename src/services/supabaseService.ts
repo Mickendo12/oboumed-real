@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { ReminderDB, ReminderInput } from '@/types/reminder';
 
@@ -112,7 +113,7 @@ export const getAllProfiles = async (): Promise<Profile[]> => {
   return data || [];
 };
 
-// Medication functions
+// Medication functions with proper RLS handling
 export const getMedicationsForUser = async (userId: string): Promise<Medication[]> => {
   const { data, error } = await supabase
     .from('medications')
@@ -121,6 +122,7 @@ export const getMedicationsForUser = async (userId: string): Promise<Medication[
     .order('created_at', { ascending: false });
     
   if (error) {
+    console.error('Error fetching medications:', error);
     throw error;
   }
   
@@ -135,13 +137,14 @@ export const addMedication = async (medication: Omit<Medication, 'id' | 'created
     .single();
     
   if (error) {
+    console.error('Error adding medication:', error);
     throw error;
   }
   
   return data;
 };
 
-// Reminder functions
+// Reminder functions with proper RLS handling
 export const getRemindersForUser = async (userId: string): Promise<ReminderDB[]> => {
   const { data, error } = await supabase
     .from('reminders')
@@ -150,6 +153,7 @@ export const getRemindersForUser = async (userId: string): Promise<ReminderDB[]>
     .order('created_at', { ascending: false });
     
   if (error) {
+    console.error('Error fetching reminders:', error);
     throw error;
   }
   
@@ -164,6 +168,7 @@ export const addReminder = async (reminder: ReminderInput): Promise<ReminderDB> 
     .single();
     
   if (error) {
+    console.error('Error adding reminder:', error);
     throw error;
   }
   
@@ -177,6 +182,7 @@ export const deleteReminder = async (id: string): Promise<void> => {
     .eq('id', id);
     
   if (error) {
+    console.error('Error deleting reminder:', error);
     throw error;
   }
 };
@@ -207,6 +213,7 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
   });
   
   if (funcError) {
+    console.error('Error generating QR code text:', funcError);
     throw funcError;
   }
   
@@ -215,13 +222,15 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
     .insert({
       user_id: userId,
       qr_code: qrCodeText,
+      access_key: qrCodeText, // Utiliser le même code pour l'access_key
       status: 'active',
-      expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 an (QR permanent)
+      expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 an
     })
     .select()
     .single();
     
   if (error) {
+    console.error('Error creating QR code record:', error);
     throw error;
   }
   
@@ -236,6 +245,7 @@ export const getQRCodesForUser = async (userId: string): Promise<QRCode[]> => {
     .order('created_at', { ascending: false });
     
   if (error) {
+    console.error('Error fetching QR codes:', error);
     throw error;
   }
   
@@ -276,7 +286,17 @@ export const validateQRCode = async (qrCode: string): Promise<{ valid: boolean; 
 export const createDoctorSession = async (patientId: string, doctorId: string, qrCodeId?: string): Promise<DoctorAccessSession> => {
   console.log('Creating doctor session:', { patientId, doctorId, qrCodeId });
   
-  // Créer directement la session - les politiques RLS permettront l'accès pour les médecins
+  // Vérifier que l'utilisateur est bien un médecin
+  const { data: doctorProfile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('user_id', doctorId)
+    .single();
+    
+  if (!doctorProfile || doctorProfile.role !== 'doctor') {
+    throw new Error('Seuls les médecins peuvent créer des sessions d\'accès');
+  }
+  
   const sessionData = {
     patient_id: patientId,
     doctor_id: doctorId,
@@ -296,6 +316,14 @@ export const createDoctorSession = async (patientId: string, doctorId: string, q
     console.error('Error creating doctor session:', error);
     throw error;
   }
+  
+  // Logger l'accès
+  await logAccess({
+    patient_id: patientId,
+    doctor_id: doctorId,
+    action: 'session_created',
+    details: { session_id: data.id, qr_code_id: qrCodeId }
+  });
   
   console.log('Doctor session created successfully:', data);
   return data;
@@ -340,6 +368,7 @@ export const getAccessLogs = async (): Promise<AccessLog[]> => {
     .order('created_at', { ascending: false });
     
   if (error) {
+    console.error('Error fetching access logs:', error);
     throw error;
   }
   
@@ -357,6 +386,7 @@ export const updateUserRole = async (userId: string, role: 'user' | 'doctor' | '
     .eq('user_id', userId);
     
   if (error) {
+    console.error('Error updating user role:', error);
     throw error;
   }
 };
@@ -368,6 +398,7 @@ export const updateUserAccessStatus = async (userId: string, status: 'active' | 
     .eq('user_id', userId);
     
   if (error) {
+    console.error('Error updating access status:', error);
     throw error;
   }
 };
@@ -385,8 +416,21 @@ export const generateDoctorAccessKey = async (userId: string): Promise<string> =
     .eq('user_id', userId);
     
   if (error) {
+    console.error('Error generating doctor access key:', error);
     throw error;
   }
   
   return accessKey;
+};
+
+// Fonction utilitaire pour nettoyer les données expirées
+export const cleanupExpiredData = async (): Promise<void> => {
+  try {
+    const { error } = await supabase.rpc('cleanup_expired_data');
+    if (error) {
+      console.error('Error cleaning up expired data:', error);
+    }
+  } catch (error) {
+    console.error('Error calling cleanup function:', error);
+  }
 };
