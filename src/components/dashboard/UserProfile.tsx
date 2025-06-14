@@ -6,7 +6,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { User, Heart, Phone, Shield } from 'lucide-react';
+import { User, Heart, Phone } from 'lucide-react';
 import ProfileInfoTable from './profile/ProfileInfoTable';
 
 interface UserProfileProps {
@@ -74,6 +74,14 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
     }
   };
 
+  const getRoleDisplayName = (role: string) => {
+    switch (role) {
+      case 'admin': return 'Administrateur';
+      case 'doctor': return 'Médecin';
+      default: return 'Utilisateur';
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Informations personnelles avec IMC */}
@@ -102,8 +110,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
                 <span className="font-medium">Rôle:</span>
                 <div className="mt-1">
                   <Badge variant={getRoleBadgeVariant(profile.role)}>
-                    {profile.role === 'admin' ? 'Administrateur' : 
-                     profile.role === 'doctor' ? 'Médecin' : 'Utilisateur'}
+                    {getRoleDisplayName(profile.role)}
                   </Badge>
                 </div>
               </div>
