@@ -1,20 +1,20 @@
 
 import React, { useState, useEffect } from 'react';
-import { getUserProfile, updateUserProfile } from '@/services/supabaseService';
-import { Profile } from '@/services/supabaseService';
+import { getUserProfileWithBMI, updateUserProfile } from '@/services/supabaseService';
+import { ProfileWithBMI } from '@/services/supabaseService';
 import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { User, Heart, Phone, Shield } from 'lucide-react';
+import ProfileInfoTable from './profile/ProfileInfoTable';
 
 interface UserProfileProps {
   userId: string;
 }
 
 const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<ProfileWithBMI | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -23,7 +23,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
       try {
         if (!userId) return;
         
-        const userProfile = await getUserProfile(userId);
+        const userProfile = await getUserProfileWithBMI(userId);
         setProfile(userProfile);
       } catch (error) {
         console.error("Error fetching user profile:", error);
@@ -76,7 +76,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
 
   return (
     <div className="space-y-6">
-      {/* Informations personnelles */}
+      {/* Informations personnelles avec IMC */}
       <Card className="dark-container">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -84,45 +84,49 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
             Informations personnelles
           </CardTitle>
           <CardDescription>
-            Vos informations de base et de contact
+            Vos informations de base, contact et données physiques
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableBody>
-              <TableRow>
-                <TableCell className="font-medium">Nom complet</TableCell>
-                <TableCell>{profile.name || 'Non renseigné'}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Email</TableCell>
-                <TableCell>{profile.email}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Téléphone</TableCell>
-                <TableCell>{profile.phone_number || 'Non renseigné'}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Rôle</TableCell>
-                <TableCell>
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-4">
+              <div>
+                <span className="font-medium">Nom complet:</span>
+                <p className="text-sm">{profile.name || 'Non renseigné'}</p>
+              </div>
+              <div>
+                <span className="font-medium">Email:</span>
+                <p className="text-sm">{profile.email}</p>
+              </div>
+              <div>
+                <span className="font-medium">Rôle:</span>
+                <div className="mt-1">
                   <Badge variant={getRoleBadgeVariant(profile.role)}>
                     {profile.role === 'admin' ? 'Administrateur' : 
                      profile.role === 'doctor' ? 'Médecin' : 'Utilisateur'}
                   </Badge>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Statut d'accès</TableCell>
-                <TableCell>
+                </div>
+              </div>
+              <div>
+                <span className="font-medium">Statut d'accès:</span>
+                <div className="mt-1">
                   <Badge variant={profile.access_status === 'active' ? 'default' : 'destructive'}>
                     {profile.access_status === 'active' ? 'Actif' : 
                      profile.access_status === 'restricted' ? 'Restreint' : 'Expiré'}
                   </Badge>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+                </div>
+              </div>
+            </div>
+            <div>
+              <ProfileInfoTable profile={profile} />
+            </div>
+          </div>
         </CardContent>
+        <CardFooter>
+          <Button variant="outline" size="sm">
+            Modifier mes informations
+          </Button>
+        </CardFooter>
       </Card>
 
       {/* Informations médicales */}
@@ -137,32 +141,20 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableBody>
-              <TableRow>
-                <TableCell className="font-medium">Groupe sanguin</TableCell>
-                <TableCell>
-                  {profile.blood_type ? (
-                    <Badge variant="outline">{profile.blood_type}</Badge>
-                  ) : (
-                    'Non renseigné'
-                  )}
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Allergies</TableCell>
-                <TableCell>{profile.allergies || 'Aucune allergie connue'}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Maladies chroniques</TableCell>
-                <TableCell>{profile.chronic_diseases || 'Aucune maladie chronique'}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Traitements actuels</TableCell>
-                <TableCell>{profile.current_medications || 'Aucun traitement en cours'}</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+          <div className="space-y-4">
+            <div>
+              <h4 className="font-medium mb-2">Allergies</h4>
+              <p className="text-sm">{profile.allergies || 'Aucune allergie connue'}</p>
+            </div>
+            <div>
+              <h4 className="font-medium mb-2">Maladies chroniques</h4>
+              <p className="text-sm">{profile.chronic_diseases || 'Aucune maladie chronique'}</p>
+            </div>
+            <div>
+              <h4 className="font-medium mb-2">Traitements actuels</h4>
+              <p className="text-sm">{profile.current_medications || 'Aucun traitement en cours'}</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -178,28 +170,21 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableBody>
-              <TableRow>
-                <TableCell className="font-medium">Nom du contact</TableCell>
-                <TableCell>{profile.emergency_contact_name || 'Non renseigné'}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Téléphone</TableCell>
-                <TableCell>{profile.emergency_contact_phone || 'Non renseigné'}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Relation</TableCell>
-                <TableCell>{profile.emergency_contact_relationship || 'Non renseigné'}</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+          <div className="space-y-4">
+            <div>
+              <span className="font-medium">Nom du contact:</span>
+              <p className="text-sm">{profile.emergency_contact_name || 'Non renseigné'}</p>
+            </div>
+            <div>
+              <span className="font-medium">Téléphone:</span>
+              <p className="text-sm">{profile.emergency_contact_phone || 'Non renseigné'}</p>
+            </div>
+            <div>
+              <span className="font-medium">Relation:</span>
+              <p className="text-sm">{profile.emergency_contact_relationship || 'Non renseigné'}</p>
+            </div>
+          </div>
         </CardContent>
-        <CardFooter>
-          <Button variant="outline" size="sm">
-            Modifier mes informations
-          </Button>
-        </CardFooter>
       </Card>
     </div>
   );

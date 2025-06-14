@@ -1,16 +1,15 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
-import { ArrowLeft, User, Pill, FileText } from 'lucide-react';
+import { ArrowLeft, User, Pill, FileText, Weight, Ruler, Activity } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { 
-  getUserProfile, 
+  getUserProfileWithBMI, 
   getMedicationsForUser, 
   logAccess,
-  Profile, 
+  ProfileWithBMI, 
   Medication 
 } from '@/services/supabaseService';
 
@@ -21,7 +20,7 @@ interface PatientProfileProps {
 }
 
 const PatientProfile: React.FC<PatientProfileProps> = ({ patientId, doctorId, onBack }) => {
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<ProfileWithBMI | null>(null);
   const [medications, setMedications] = useState<Medication[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -34,7 +33,7 @@ const PatientProfile: React.FC<PatientProfileProps> = ({ patientId, doctorId, on
     try {
       setLoading(true);
       const [profileData, medicationsData] = await Promise.all([
-        getUserProfile(patientId),
+        getUserProfileWithBMI(patientId),
         getMedicationsForUser(patientId)
       ]);
 
@@ -57,6 +56,24 @@ const PatientProfile: React.FC<PatientProfileProps> = ({ patientId, doctorId, on
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getBMIBadgeVariant = (bmi?: number) => {
+    if (!bmi) return 'secondary';
+    if (bmi < 18.5) return 'outline';
+    if (bmi < 25) return 'default';
+    if (bmi < 30) return 'secondary';
+    return 'destructive';
+  };
+
+  const getBMICategoryColor = (category?: string) => {
+    switch (category) {
+      case 'Poids normal': return 'text-green-600';
+      case 'Insuffisance pondérale': return 'text-blue-600';
+      case 'Surpoids': return 'text-yellow-600';
+      case 'Obésité': return 'text-red-600';
+      default: return 'text-muted-foreground';
     }
   };
 
@@ -133,28 +150,78 @@ const PatientProfile: React.FC<PatientProfileProps> = ({ patientId, doctorId, on
 
         <Card className="dark-container">
           <CardHeader>
-            <CardTitle>Contact d'urgence</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Activity size={20} />
+              Données physiques
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableBody>
                 <TableRow>
-                  <TableCell className="font-medium">Nom</TableCell>
-                  <TableCell>{profile.emergency_contact_name || 'Non renseigné'}</TableCell>
+                  <TableCell className="font-medium flex items-center">
+                    <Weight className="mr-2" size={16} />
+                    Poids
+                  </TableCell>
+                  <TableCell>
+                    {profile.weight_kg ? `${profile.weight_kg} kg` : 'Non renseigné'}
+                  </TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell className="font-medium">Téléphone</TableCell>
-                  <TableCell>{profile.emergency_contact_phone || 'Non renseigné'}</TableCell>
+                  <TableCell className="font-medium flex items-center">
+                    <Ruler className="mr-2" size={16} />
+                    Taille
+                  </TableCell>
+                  <TableCell>
+                    {profile.height_cm ? `${profile.height_cm} cm` : 'Non renseigné'}
+                  </TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell className="font-medium">Relation</TableCell>
-                  <TableCell>{profile.emergency_contact_relationship || 'Non renseigné'}</TableCell>
+                  <TableCell className="font-medium">IMC</TableCell>
+                  <TableCell>
+                    {profile.bmi ? (
+                      <div className="flex items-center gap-2">
+                        <Badge variant={getBMIBadgeVariant(profile.bmi)}>
+                          {profile.bmi}
+                        </Badge>
+                        <span className={`text-sm ${getBMICategoryColor(profile.bmi_category)}`}>
+                          {profile.bmi_category}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">Non calculable</span>
+                    )}
+                  </TableCell>
                 </TableRow>
               </TableBody>
             </Table>
           </CardContent>
         </Card>
       </div>
+
+      <Card className="dark-container">
+        <CardHeader>
+          <CardTitle>Contact d'urgence</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableBody>
+              <TableRow>
+                <TableCell className="font-medium">Nom</TableCell>
+                <TableCell>{profile.emergency_contact_name || 'Non renseigné'}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Téléphone</TableCell>
+                <TableCell>{profile.emergency_contact_phone || 'Non renseigné'}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Relation</TableCell>
+                <TableCell>{profile.emergency_contact_relationship || 'Non renseigné'}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
       <Card className="dark-container">
         <CardHeader>

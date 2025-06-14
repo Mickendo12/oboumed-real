@@ -52,8 +52,29 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "access_logs_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_bmi"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "access_logs_doctor_id_fkey"
             columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "access_logs_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_bmi"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "access_logs_patient_id_fkey"
+            columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
@@ -62,7 +83,7 @@ export type Database = {
             foreignKeyName: "access_logs_patient_id_fkey"
             columns: ["patient_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "profiles_with_bmi"
             referencedColumns: ["user_id"]
           },
         ]
@@ -143,10 +164,24 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "doctor_access_sessions_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_bmi"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "doctor_access_sessions_patient_id_fkey"
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "doctor_access_sessions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_bmi"
             referencedColumns: ["user_id"]
           },
           {
@@ -215,6 +250,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "medications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_bmi"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       prescriptions: {
@@ -262,6 +304,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "prescriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_bmi"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       profiles: {
@@ -277,6 +326,7 @@ export type Database = {
           emergency_contact_name: string | null
           emergency_contact_phone: string | null
           emergency_contact_relationship: string | null
+          height_cm: number | null
           id: string
           name: string | null
           phone_number: string | null
@@ -284,6 +334,7 @@ export type Database = {
           share_with_doctor: boolean | null
           updated_at: string | null
           user_id: string
+          weight_kg: number | null
         }
         Insert: {
           access_status?: Database["public"]["Enums"]["access_status"] | null
@@ -297,6 +348,7 @@ export type Database = {
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           emergency_contact_relationship?: string | null
+          height_cm?: number | null
           id?: string
           name?: string | null
           phone_number?: string | null
@@ -304,6 +356,7 @@ export type Database = {
           share_with_doctor?: boolean | null
           updated_at?: string | null
           user_id: string
+          weight_kg?: number | null
         }
         Update: {
           access_status?: Database["public"]["Enums"]["access_status"] | null
@@ -317,6 +370,7 @@ export type Database = {
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           emergency_contact_relationship?: string | null
+          height_cm?: number | null
           id?: string
           name?: string | null
           phone_number?: string | null
@@ -324,6 +378,7 @@ export type Database = {
           share_with_doctor?: boolean | null
           updated_at?: string | null
           user_id?: string
+          weight_kg?: number | null
         }
         Relationships: []
       }
@@ -367,10 +422,24 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "qr_codes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_bmi"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "qr_codes_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "qr_codes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_bmi"
             referencedColumns: ["user_id"]
           },
         ]
@@ -417,13 +486,98 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "reminders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_bmi"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_with_bmi: {
+        Row: {
+          access_status: Database["public"]["Enums"]["access_status"] | null
+          allergies: string | null
+          blood_type: string | null
+          bmi: number | null
+          bmi_category: string | null
+          chronic_diseases: string | null
+          created_at: string | null
+          current_medications: string | null
+          doctor_access_key: string | null
+          email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          emergency_contact_relationship: string | null
+          height_cm: number | null
+          id: string | null
+          name: string | null
+          phone_number: string | null
+          role: Database["public"]["Enums"]["user_role"] | null
+          share_with_doctor: boolean | null
+          updated_at: string | null
+          user_id: string | null
+          weight_kg: number | null
+        }
+        Insert: {
+          access_status?: Database["public"]["Enums"]["access_status"] | null
+          allergies?: string | null
+          blood_type?: string | null
+          bmi?: never
+          bmi_category?: never
+          chronic_diseases?: string | null
+          created_at?: string | null
+          current_medications?: string | null
+          doctor_access_key?: string | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
+          height_cm?: number | null
+          id?: string | null
+          name?: string | null
+          phone_number?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          share_with_doctor?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+          weight_kg?: number | null
+        }
+        Update: {
+          access_status?: Database["public"]["Enums"]["access_status"] | null
+          allergies?: string | null
+          blood_type?: string | null
+          bmi?: never
+          bmi_category?: never
+          chronic_diseases?: string | null
+          created_at?: string | null
+          current_medications?: string | null
+          doctor_access_key?: string | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
+          height_cm?: number | null
+          id?: string | null
+          name?: string | null
+          phone_number?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          share_with_doctor?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      calculate_bmi: {
+        Args: { weight_kg: number; height_cm: number }
+        Returns: number
+      }
       cleanup_expired_sessions: {
         Args: Record<PropertyKey, never>
         Returns: undefined

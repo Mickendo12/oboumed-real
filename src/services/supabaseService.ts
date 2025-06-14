@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { ReminderDB, ReminderInput } from '@/types/reminder';
 
@@ -15,12 +14,19 @@ export interface Profile {
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
   emergency_contact_relationship?: string;
+  weight_kg?: number;
+  height_cm?: number;
   role: 'user' | 'doctor' | 'admin';
   share_with_doctor: boolean;
   access_status: 'active' | 'restricted' | 'expired';
   doctor_access_key?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface ProfileWithBMI extends Profile {
+  bmi?: number;
+  bmi_category?: string;
 }
 
 export interface Medication {
@@ -83,6 +89,21 @@ export const getUserProfile = async (userId: string): Promise<Profile | null> =>
     
   if (error) {
     console.error('Error fetching user profile:', error);
+    return null;
+  }
+  
+  return data;
+};
+
+export const getUserProfileWithBMI = async (userId: string): Promise<ProfileWithBMI | null> => {
+  const { data, error } = await supabase
+    .from('profiles_with_bmi')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+    
+  if (error) {
+    console.error('Error fetching user profile with BMI:', error);
     return null;
   }
   
