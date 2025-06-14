@@ -1,6 +1,6 @@
 
 import { useState, useRef, useCallback } from 'react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { OcrResult } from '../types';
 
 export const usePrescriptionScanner = (onScanComplete: (result: OcrResult, imageData: string) => void) => {
