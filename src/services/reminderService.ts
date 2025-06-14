@@ -2,16 +2,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ReminderDB, ReminderInput } from '@/types/reminder';
 
-// Types pour la conversion
-export interface ReminderForm {
-  id: string;
-  title: string;
-  medicationName: string;
-  time: string;
-  dosage: string;
-  frequency: string;
-}
-
 export const getRemindersForUser = async (userId: string): Promise<ReminderDB[]> => {
   const { data, error } = await supabase
     .from('reminders')
@@ -51,24 +41,24 @@ export const deleteReminder = async (id: string): Promise<void> => {
   }
 };
 
-// Fonctions de conversion pour compatibilité
-export const convertDBReminderToForm = (reminder: ReminderDB): ReminderForm => {
+// Fonctions de conversion pour compatibilité avec les composants UI
+export const convertDBReminderToForm = (reminder: ReminderDB): import('@/types/reminder').ReminderForm => {
   return {
     id: reminder.id,
     title: `${reminder.medication_name} - ${reminder.dosage}`,
     medicationName: reminder.medication_name,
     time: reminder.time,
-    dosage: reminder.dosage,
-    frequency: reminder.frequency
+    days: reminder.frequency === 'daily' ? ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] : ['monday', 'wednesday', 'friday'],
+    notes: ''
   };
 };
 
-export const convertFormReminderToDB = (reminder: Omit<ReminderForm, 'id' | 'title'>, userId: string): ReminderInput => {
+export const convertFormReminderToDB = (reminder: Omit<import('@/types/reminder').ReminderForm, 'id' | 'title'>, userId: string): ReminderInput => {
   return {
     user_id: userId,
     medication_name: reminder.medicationName,
     time: reminder.time,
-    dosage: reminder.dosage,
-    frequency: reminder.frequency
+    dosage: '1 comprimé', // Valeur par défaut
+    frequency: reminder.days.length === 7 ? 'daily' : 'every_other_day'
   };
 };

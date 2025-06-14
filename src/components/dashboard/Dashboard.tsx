@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -51,7 +50,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
         }
         
         // Convert DB reminders to form reminders
-        const formReminders = userReminders.map(convertDBReminderToForm);
+        const formReminders: FormReminder[] = userReminders.map(convertDBReminderToForm);
         setReminders(formReminders);
         setMedications(userMedications);
       } catch (error) {
@@ -73,7 +72,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
     try {
       const dbReminderInput = convertFormReminderToDB(reminder, userId);
       const newDBReminder = await addReminder(dbReminderInput);
-      const newFormReminder = convertDBReminderToForm(newDBReminder);
+      const newFormReminder: FormReminder = convertDBReminderToForm(newDBReminder);
       
       setReminders([...reminders, newFormReminder]);
       setIsCreatingReminder(false);
@@ -117,7 +116,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
         getMedicationsForUser(userId)
       ]);
       
-      const formReminders = userReminders.map(convertDBReminderToForm);
+      const formReminders: FormReminder[] = userReminders.map(convertDBReminderToForm);
       setReminders(formReminders);
       setMedications(userMedications);
     } catch (error) {

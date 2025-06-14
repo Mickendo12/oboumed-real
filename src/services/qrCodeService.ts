@@ -5,7 +5,7 @@ export interface QRCode {
   id: string;
   user_id: string;
   qr_code: string;
-  access_key: string; // Nouvelle clé d'accès unique
+  access_key: string;
   status: 'active' | 'expired' | 'used';
   expires_at: string;
   created_by?: string;
@@ -16,14 +16,14 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
   // Vérifier s'il existe déjà un QR code actif pour cet utilisateur
   const { data: existingQRCode } = await supabase
     .from('qr_codes')
-    .select('*')
+    .select('*, access_key')
     .eq('user_id', userId)
     .eq('status', 'active')
     .single();
 
   // Si un QR code actif existe déjà, le retourner
   if (existingQRCode) {
-    return existingQRCode;
+    return existingQRCode as QRCode;
   }
 
   // Marquer tous les anciens QR codes comme expirés
@@ -50,22 +50,22 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
       qr_code: qrCodeText,
       access_key: accessKey,
       status: 'active',
-      expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 an
+      expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
     })
-    .select()
+    .select('*, access_key')
     .single();
     
   if (error) {
     throw error;
   }
   
-  return data;
+  return data as QRCode;
 };
 
 export const getQRCodesForUser = async (userId: string): Promise<QRCode[]> => {
   const { data, error } = await supabase
     .from('qr_codes')
-    .select('*')
+    .select('*, access_key')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
     
@@ -73,7 +73,7 @@ export const getQRCodesForUser = async (userId: string): Promise<QRCode[]> => {
     throw error;
   }
   
-  return data || [];
+  return (data || []) as QRCode[];
 };
 
 export const validateQRCode = async (qrCode: string): Promise<{ valid: boolean; userId?: string }> => {
