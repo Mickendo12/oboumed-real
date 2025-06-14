@@ -16,7 +16,7 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
   // Vérifier s'il existe déjà un QR code actif pour cet utilisateur
   const { data: existingQRCode } = await supabase
     .from('qr_codes')
-    .select('*, access_key')
+    .select('*')
     .eq('user_id', userId)
     .eq('status', 'active')
     .single();
@@ -52,7 +52,7 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
       status: 'active',
       expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
     })
-    .select('*, access_key')
+    .select('*')
     .single();
     
   if (error) {
@@ -65,7 +65,7 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
 export const getQRCodesForUser = async (userId: string): Promise<QRCode[]> => {
   const { data, error } = await supabase
     .from('qr_codes')
-    .select('*, access_key')
+    .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
     

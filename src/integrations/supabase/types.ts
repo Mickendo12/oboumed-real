@@ -329,6 +329,7 @@ export type Database = {
       }
       qr_codes: {
         Row: {
+          access_key: string
           created_at: string | null
           created_by: string | null
           expires_at: string | null
@@ -338,6 +339,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          access_key: string
           created_at?: string | null
           created_by?: string | null
           expires_at?: string | null
@@ -347,6 +349,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          access_key?: string
           created_at?: string | null
           created_by?: string | null
           expires_at?: string | null
