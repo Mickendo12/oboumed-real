@@ -40,21 +40,33 @@ export interface UserProfile {
 }
 
 export const signUp = async (data: SignUpData) => {
+  // Transmet toutes les infos au metadata pour le trigger Supabase
+  const { email, password, name, phoneNumber, bloodType, emergencyContact, allergies, chronicDiseases, medications } = data;
+  const user_metadata: Record<string, any> = {
+    name,
+    phoneNumber,
+    bloodType,
+    allergies,
+    chronicDiseases,
+    medications,
+    emergencyContactName: emergencyContact?.name || null,
+    emergencyContactPhone: emergencyContact?.phoneNumber || null,
+    emergencyContactRelationship: emergencyContact?.relationship || null,
+  };
+
   const { data: authData, error } = await supabase.auth.signUp({
-    email: data.email,
-    password: data.password,
+    email,
+    password,
     options: {
-      data: {
-        name: data.name
-      }
+      data: user_metadata
     }
   });
-  
+
   if (error) {
     throw error;
   }
-  
-  // Le profil sera créé automatiquement par le trigger
+
+  // Le profil est créé automatiquement via le trigger handle_new_user
   return authData;
 };
 
@@ -73,7 +85,6 @@ export const signIn = async (data: SignInData) => {
 
 export const logOut = async () => {
   const { error } = await supabase.auth.signOut();
-  
   if (error) {
     throw error;
   }

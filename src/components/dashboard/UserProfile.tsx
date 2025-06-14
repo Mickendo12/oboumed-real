@@ -9,6 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { User, Heart, Phone } from 'lucide-react';
 import ProfileInfoTable from './profile/ProfileInfoTable';
 
+// MODAL D'ÉDITION
+import EditProfileModal from './profile/EditProfileModal';
+
 interface UserProfileProps {
   userId: string;
 }
@@ -17,12 +20,12 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
   const [profile, setProfile] = useState<ProfileWithBMI | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const [editOpen, setEditOpen] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         if (!userId) return;
-        
         const userProfile = await getUserProfileWithBMI(userId);
         setProfile(userProfile);
       } catch (error) {
@@ -39,6 +42,16 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
 
     fetchProfile();
   }, [userId, toast]);
+
+  const refetchProfile = async () => {
+    setLoading(true);
+    try {
+      const userProfile = await getUserProfileWithBMI(userId);
+      setProfile(userProfile);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -84,6 +97,20 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
 
   return (
     <div className="space-y-6">
+      {/* MODAL édition */}
+      <EditProfileModal
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        profile={profile}
+        userId={userId}
+        onSuccess={() => {
+          refetchProfile();
+          toast({
+            title: "Profil mis à jour",
+            description: "Vos informations ont été sauvegardées avec succès.",
+          });
+        }}
+      />
       {/* Informations personnelles avec IMC */}
       <Card className="dark-container">
         <CardHeader>
@@ -130,7 +157,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
           </div>
         </CardContent>
         <CardFooter>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
             Modifier mes informations
           </Button>
         </CardFooter>
