@@ -7,6 +7,8 @@ export interface SignUpData {
   name?: string;
   bloodType?: string;
   phoneNumber?: string;
+  weightKg?: string;
+  heightCm?: string;
   emergencyContact?: {
     name?: string;
     phoneNumber?: string;
@@ -41,11 +43,13 @@ export interface UserProfile {
 
 export const signUp = async (data: SignUpData) => {
   // Transmet toutes les infos au metadata pour le trigger Supabase
-  const { email, password, name, phoneNumber, bloodType, emergencyContact, allergies, chronicDiseases, medications } = data;
+  const { email, password, name, phoneNumber, bloodType, weightKg, heightCm, emergencyContact, allergies, chronicDiseases, medications } = data;
   const user_metadata: Record<string, any> = {
     name,
     phoneNumber,
     bloodType,
+    weightKg: weightKg ? parseFloat(weightKg) : null,
+    heightCm: heightCm ? parseFloat(heightCm) : null,
     allergies,
     chronicDiseases,
     medications,

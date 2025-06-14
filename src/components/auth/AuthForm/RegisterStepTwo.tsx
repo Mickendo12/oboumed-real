@@ -9,6 +9,10 @@ interface RegisterStepTwoProps {
   setBloodType: (value: string) => void;
   phoneNumber: string;
   setPhoneNumber: (value: string) => void;
+  weightKg: string;
+  setWeightKg: (value: string) => void;
+  heightCm: string;
+  setHeightCm: (value: string) => void;
   emergencyContactName: string;
   setEmergencyContactName: (value: string) => void;
   emergencyContactPhone: string;
@@ -31,6 +35,10 @@ const RegisterStepTwo: React.FC<RegisterStepTwoProps> = ({
   setBloodType,
   phoneNumber,
   setPhoneNumber,
+  weightKg,
+  setWeightKg,
+  heightCm,
+  setHeightCm,
   emergencyContactName,
   setEmergencyContactName,
   emergencyContactPhone,
@@ -66,6 +74,10 @@ const RegisterStepTwo: React.FC<RegisterStepTwoProps> = ({
         setBloodType={setBloodType}
         phoneNumber={phoneNumber}
         setPhoneNumber={setPhoneNumber}
+        weightKg={weightKg}
+        setWeightKg={setWeightKg}
+        heightCm={heightCm}
+        setHeightCm={setHeightCm}
         allergies={allergies}
         setAllergies={setAllergies}
         chronicDiseases={chronicDiseases}

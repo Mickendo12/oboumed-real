@@ -25,6 +25,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
   const [name, setName] = useState('');
   const [bloodType, setBloodType] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [weightKg, setWeightKg] = useState('');
+  const [heightCm, setHeightCm] = useState('');
   const [emergencyContactName, setEmergencyContactName] = useState('');
   const [emergencyContactPhone, setEmergencyContactPhone] = useState('');
   const [emergencyContactRelationship, setEmergencyContactRelationship] = useState('');
@@ -77,6 +79,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
           name,
           bloodType,
           phoneNumber,
+          weightKg,
+          heightCm,
           emergencyContact: {
             name: emergencyContactName,
             phoneNumber: emergencyContactPhone,
@@ -192,6 +196,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
                 setBloodType={setBloodType}
                 phoneNumber={phoneNumber}
                 setPhoneNumber={setPhoneNumber}
+                weightKg={weightKg}
+                setWeightKg={setWeightKg}
+                heightCm={heightCm}
+                setHeightCm={setHeightCm}
                 emergencyContactName={emergencyContactName}
                 setEmergencyContactName={setEmergencyContactName}
                 emergencyContactPhone={emergencyContactPhone}
