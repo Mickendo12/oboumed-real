@@ -26,7 +26,9 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
     const fetchProfile = async () => {
       try {
         if (!userId) return;
+        console.log('Fetching profile for user:', userId);
         const userProfile = await getUserProfileWithBMI(userId);
+        console.log('Profile data received:', userProfile);
         setProfile(userProfile);
       } catch (error) {
         console.error("Error fetching user profile:", error);
@@ -111,6 +113,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
           });
         }}
       />
+      
       {/* Informations personnelles avec IMC */}
       <Card className="dark-container">
         <CardHeader>
@@ -127,11 +130,25 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
             <div className="space-y-4">
               <div>
                 <span className="font-medium">Nom complet:</span>
-                <p className="text-sm">{profile.name || 'Non renseigné'}</p>
+                <p className="text-sm text-gray-600">
+                  {profile.name || 'Non renseigné'}
+                </p>
               </div>
               <div>
                 <span className="font-medium">Email:</span>
-                <p className="text-sm">{profile.email}</p>
+                <p className="text-sm text-gray-600">{profile.email}</p>
+              </div>
+              <div>
+                <span className="font-medium">Téléphone:</span>
+                <p className="text-sm text-gray-600">
+                  {profile.phone_number || 'Non renseigné'}
+                </p>
+              </div>
+              <div>
+                <span className="font-medium">Groupe sanguin:</span>
+                <p className="text-sm text-gray-600">
+                  {profile.blood_type || 'Non renseigné'}
+                </p>
               </div>
               <div>
                 <span className="font-medium">Rôle:</span>
@@ -178,15 +195,21 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
           <div className="space-y-4">
             <div>
               <h4 className="font-medium mb-2">Allergies</h4>
-              <p className="text-sm">{profile.allergies || 'Aucune allergie connue'}</p>
+              <p className="text-sm text-gray-600">
+                {profile.allergies || 'Aucune allergie connue'}
+              </p>
             </div>
             <div>
               <h4 className="font-medium mb-2">Maladies chroniques</h4>
-              <p className="text-sm">{profile.chronic_diseases || 'Aucune maladie chronique'}</p>
+              <p className="text-sm text-gray-600">
+                {profile.chronic_diseases || 'Aucune maladie chronique'}
+              </p>
             </div>
             <div>
               <h4 className="font-medium mb-2">Traitements actuels</h4>
-              <p className="text-sm">{profile.current_medications || 'Aucun traitement en cours'}</p>
+              <p className="text-sm text-gray-600">
+                {profile.current_medications || 'Aucun traitement en cours'}
+              </p>
             </div>
           </div>
         </CardContent>
@@ -207,15 +230,21 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
           <div className="space-y-4">
             <div>
               <span className="font-medium">Nom du contact:</span>
-              <p className="text-sm">{profile.emergency_contact_name || 'Non renseigné'}</p>
+              <p className="text-sm text-gray-600">
+                {profile.emergency_contact_name || 'Non renseigné'}
+              </p>
             </div>
             <div>
               <span className="font-medium">Téléphone:</span>
-              <p className="text-sm">{profile.emergency_contact_phone || 'Non renseigné'}</p>
+              <p className="text-sm text-gray-600">
+                {profile.emergency_contact_phone || 'Non renseigné'}
+              </p>
             </div>
             <div>
               <span className="font-medium">Relation:</span>
-              <p className="text-sm">{profile.emergency_contact_relationship || 'Non renseigné'}</p>
+              <p className="text-sm text-gray-600">
+                {profile.emergency_contact_relationship || 'Non renseigné'}
+              </p>
             </div>
           </div>
         </CardContent>
