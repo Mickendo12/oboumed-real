@@ -209,13 +209,17 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
             <UserProfile userId={userId} />
           </TabsContent>
 
-          <TabsContent value="doctor" className="space-y-4">
-            <DoctorDashboard userId={userId} />
-          </TabsContent>
+          {userRole === 'doctor' && (
+            <TabsContent value="doctor" className="space-y-4">
+              <DoctorDashboard userId={userId} />
+            </TabsContent>
+          )}
           
-          <TabsContent value="admin" className="space-y-4">
-            <AdminDashboard />
-          </TabsContent>
+          {userRole === 'admin' && (
+            <TabsContent value="admin" className="space-y-4">
+              <AdminDashboard />
+            </TabsContent>
+          )}
         </div>
       </Tabs>
 
