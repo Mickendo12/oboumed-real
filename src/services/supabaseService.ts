@@ -208,8 +208,7 @@ export const getRemindersForUser = async (userId: string): Promise<ReminderDB[]>
   }));
 };
 
-export const addReminder = async (reminder: ReminderInput & { days_of_week: number[] }): Promise<ReminderDB> => {
-  // Rappel : ReminderInput doit contenir days_of_week désormais (adaptation)
+export const addReminder = async (reminder: ReminderInput): Promise<ReminderDB> => {
   const { data, error } = await supabase
     .from('reminders')
     .insert(reminder)

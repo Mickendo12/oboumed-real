@@ -27,4 +27,5 @@ export interface ReminderInput {
   time: string;
   is_active?: boolean;
   user_id: string;
+  days_of_week: number[];
 }

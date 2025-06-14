@@ -1,4 +1,3 @@
-
 import { ReminderDB, ReminderForm, ReminderInput } from '@/types/reminder';
 import { scheduleReminderNotification, cancelReminderNotification, createMedicationReminder } from './notificationService';
 
@@ -14,13 +13,36 @@ export const convertDBReminderToForm = (dbReminder: ReminderDB): ReminderForm =>
 };
 
 export const convertFormReminderToDB = (formReminder: Omit<ReminderForm, 'id'>, userId: string): ReminderInput => {
+  // Convert day names to numbers (0 = Sunday, 1 = Monday, etc.)
+  const dayNameToNumber: { [key: string]: number } = {
+    'sunday': 0,
+    'monday': 1,
+    'tuesday': 2,
+    'wednesday': 3,
+    'thursday': 4,
+    'friday': 5,
+    'saturday': 6,
+    'dimanche': 0,
+    'lundi': 1,
+    'mardi': 2,
+    'mercredi': 3,
+    'jeudi': 4,
+    'vendredi': 5,
+    'samedi': 6
+  };
+
+  const days_of_week = formReminder.days.map(day => 
+    dayNameToNumber[day.toLowerCase()] ?? parseInt(day)
+  ).filter(day => !isNaN(day));
+
   return {
     user_id: userId,
     medication_name: formReminder.medicationName,
     dosage: formReminder.notes.split(' - ')[0] || 'Dosage non spécifié',
     frequency: formReminder.days.join(', '),
     time: formReminder.time,
-    is_active: true
+    is_active: true,
+    days_of_week: days_of_week
   };
 };
 
