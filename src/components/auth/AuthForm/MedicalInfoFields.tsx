@@ -3,7 +3,7 @@ import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { AlertCircle, Droplet, Phone, Pill, Stethoscope } from 'lucide-react';
+import { AlertCircle, Droplet, Phone, Pill, Stethoscope, Weight, Ruler } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -13,6 +13,10 @@ interface MedicalInfoFieldsProps {
   setBloodType: (value: string) => void;
   phoneNumber: string;
   setPhoneNumber: (value: string) => void;
+  weightKg: string;
+  setWeightKg: (value: string) => void;
+  heightCm: string;
+  setHeightCm: (value: string) => void;
   allergies: string;
   setAllergies: (value: string) => void;
   chronicDiseases: string;
@@ -26,6 +30,10 @@ const MedicalInfoFields: React.FC<MedicalInfoFieldsProps> = ({
   setBloodType,
   phoneNumber,
   setPhoneNumber,
+  weightKg,
+  setWeightKg,
+  heightCm,
+  setHeightCm,
   allergies,
   setAllergies,
   chronicDiseases,
@@ -64,6 +72,36 @@ const MedicalInfoFields: React.FC<MedicalInfoFieldsProps> = ({
             value={phoneNumber} 
             onChange={(e) => setPhoneNumber(e.target.value)} 
             placeholder="Ex: 06 12 34 56 78" 
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Weight size={16} />
+            <Label htmlFor="weightKg">Poids (kg)</Label>
+          </div>
+          <Input 
+            id="weightKg"
+            type="number" 
+            value={weightKg} 
+            onChange={(e) => setWeightKg(e.target.value)} 
+            placeholder="Ex: 70" 
+          />
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Ruler size={16} />
+            <Label htmlFor="heightCm">Taille (cm)</Label>
+          </div>
+          <Input 
+            id="heightCm"
+            type="number" 
+            value={heightCm} 
+            onChange={(e) => setHeightCm(e.target.value)} 
+            placeholder="Ex: 175" 
           />
         </div>
       </div>
