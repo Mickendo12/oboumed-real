@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { createPrescriptionWithMedications, uploadPrescriptionImage } from '@/services/prescriptionService';
 import PrescriptionDetails from './prescription-form/PrescriptionDetails';
 import MedicationList from './prescription-form/MedicationList';

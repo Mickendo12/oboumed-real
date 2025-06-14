@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { Camera, Pill, ScanBarcode, Search } from 'lucide-react';
 import { MedicationApiResult } from '@/services/medicationApiService';
 import { ScanningModal } from './ScanningModal';

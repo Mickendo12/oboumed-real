@@ -1,14 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QrCode, Clock, User, Stethoscope } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import QRCodeScanner from './QRCodeScanner';
 import PatientProfile from './PatientProfile';
-import AccessKeyValidator from './AccessKeyValidator';
 import { 
   getActiveDoctorSessions, 
   createDoctorSession,
@@ -160,23 +158,14 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ userId }) => {
 
         <TabsContent value="sessions">
           <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Scanner QR Code */}
-              <Card className="dark-container">
-                <CardHeader>
-                  <CardTitle>Scanner QR Code Patient</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <QRCodeScanner onScanSuccess={handleQRCodeScan} />
-                </CardContent>
-              </Card>
-
-              {/* Validation par clé d'accès */}
-              <AccessKeyValidator 
-                doctorId={userId}
-                onAccessGranted={handleQRCodeScan}
-              />
-            </div>
+            <Card className="dark-container">
+              <CardHeader>
+                <CardTitle>Scanner QR Code Patient</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <QRCodeScanner onScanSuccess={handleQRCodeScan} />
+              </CardContent>
+            </Card>
 
             <Card className="dark-container">
               <CardHeader>
@@ -187,7 +176,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ userId }) => {
                   <div className="text-center py-8">
                     <Stethoscope size={48} className="mx-auto mb-4 text-muted-foreground" />
                     <p className="text-muted-foreground">
-                      Aucune session active. Scannez un code QR ou entrez une clé d'accès pour accéder à un dossier médical.
+                      Aucune session active. Scannez un code QR pour accéder à un dossier médical.
                     </p>
                   </div>
                 ) : (

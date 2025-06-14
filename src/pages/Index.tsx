@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import AuthForm from '@/components/auth/AuthForm';
 import Dashboard from '@/components/dashboard/Dashboard';
@@ -6,7 +7,7 @@ import Footer from '@/components/Footer';
 import { LayoutDashboard } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { logOut } from '@/services/authService';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
