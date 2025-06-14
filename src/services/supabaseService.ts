@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { ReminderDB, ReminderInput } from '@/types/reminder';
 
@@ -243,42 +244,52 @@ export const getQRCodesForUser = async (userId: string): Promise<QRCode[]> => {
 };
 
 export const validateQRCode = async (qrCode: string): Promise<{ valid: boolean; userId?: string }> => {
+  console.log('Validating QR code:', qrCode);
+  
   const { data, error } = await supabase
     .from('qr_codes')
     .select('user_id, status, expires_at')
     .eq('qr_code', qrCode)
     .eq('status', 'active')
-    .single();
+    .maybeSingle();
     
-  if (error || !data) {
+  if (error) {
+    console.error('Error validating QR code:', error);
+    return { valid: false };
+  }
+  
+  if (!data) {
+    console.log('QR code not found or inactive');
     return { valid: false };
   }
   
   const isExpired = new Date(data.expires_at) < new Date();
   if (isExpired) {
+    console.log('QR code expired');
     return { valid: false };
   }
   
+  console.log('QR code valid for user:', data.user_id);
   return { valid: true, userId: data.user_id };
 };
 
 // Doctor access session functions
 export const createDoctorSession = async (patientId: string, doctorId: string, qrCodeId?: string): Promise<DoctorAccessSession> => {
-  const { data, error } = await supabase
-    .from('doctor_access_sessions')
-    .insert({
-      patient_id: patientId,
-      doctor_id: doctorId,
-      qr_code_id: qrCodeId,
-      expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutes
-    })
-    .select()
-    .single();
-    
+  console.log('Creating doctor session:', { patientId, doctorId, qrCodeId });
+  
+  // Utiliser le service role pour créer la session sans restriction RLS
+  const { data, error } = await supabase.rpc('create_doctor_session', {
+    p_patient_id: patientId,
+    p_doctor_id: doctorId,
+    p_qr_code_id: qrCodeId || null
+  });
+  
   if (error) {
+    console.error('Error creating doctor session:', error);
     throw error;
   }
   
+  console.log('Doctor session created successfully:', data);
   return data;
 };
 
@@ -292,7 +303,8 @@ export const getActiveDoctorSessions = async (doctorId: string): Promise<DoctorA
     .order('created_at', { ascending: false });
     
   if (error) {
-    throw error;
+    console.error('Error fetching active sessions:', error);
+    return [];
   }
   
   return data || [];

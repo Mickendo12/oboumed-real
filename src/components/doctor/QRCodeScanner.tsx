@@ -17,12 +17,17 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const scanIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
   const stopCamera = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
+    }
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
     }
     setIsScanning(false);
   };
@@ -37,6 +42,11 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
         videoRef.current.srcObject = stream;
         streamRef.current = stream;
         setIsScanning(true);
+        
+        // Démarrer le scan automatique
+        videoRef.current.onloadedmetadata = () => {
+          startAutoScan();
+        };
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
@@ -46,6 +56,30 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
         description: "Impossible d'accéder à la caméra. Veuillez utiliser l'importation de fichier."
       });
     }
+  };
+
+  const startAutoScan = () => {
+    if (!videoRef.current) return;
+    
+    scanIntervalRef.current = setInterval(() => {
+      if (!videoRef.current || !isScanning) return;
+      
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+      ctx.drawImage(videoRef.current, 0, 0);
+      
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
+      
+      if (qrCode) {
+        console.log('QR Code détecté via caméra:', qrCode.data);
+        processQRCode(qrCode.data);
+      }
+    }, 1000); // Scanner toutes les secondes
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,7 +129,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
         const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
         
         if (qrCode) {
-          console.log('QR Code détecté:', qrCode.data);
+          console.log('QR Code détecté dans l\'image:', qrCode.data);
           await processQRCode(qrCode.data);
         } else {
           toast({
@@ -132,7 +166,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
     try {
       setLoading(true);
       
-      // Nettoyer le code QR
+      // Nettoyer et extraire le code QR
       let cleanCode = qrCodeValue.trim();
       
       // Si c'est une URL de notre système, extraire le code
@@ -141,7 +175,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
         cleanCode = parts[parts.length - 1];
       }
       
-      console.log('Processing QR code:', cleanCode);
+      console.log('Processing cleaned QR code:', cleanCode);
       
       // Valider le QR code
       const validation = await validateQRCode(cleanCode);
@@ -158,7 +192,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
       
       // Récupérer le profil du patient
       const profile = await getUserProfile(validation.userId);
-      console.log('Patient profile:', profile);
+      console.log('Patient profile retrieved:', profile);
       
       if (!profile) {
         toast({
@@ -179,9 +213,12 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
         return;
       }
       
-      // Préparer les données dans le format attendu par DoctorDashboard
+      // Préparer les données dans le format attendu
       const patientData = {
-        profile: profile,
+        profile: {
+          ...profile,
+          user_id: validation.userId // S'assurer que user_id est présent
+        },
         qrCodeId: cleanCode
       };
       
@@ -281,22 +318,20 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
                 </div>
               </div>
               
-              <div className="flex gap-2">
-                <Button 
-                  onClick={stopCamera}
-                  variant="outline"
-                  disabled={loading}
-                  className="w-full"
-                >
-                  Arrêter la caméra
-                </Button>
-              </div>
+              <Button 
+                onClick={stopCamera}
+                variant="outline"
+                disabled={loading}
+                className="w-full"
+              >
+                Arrêter la caméra
+              </Button>
               
               <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
                 <div className="flex items-start gap-2">
                   <AlertCircle size={16} className="text-blue-600 mt-0.5" />
                   <p className="text-sm text-blue-800 dark:text-blue-200">
-                    Positionnez le code QR dans le cadre pour le scanner.
+                    Positionnez le code QR dans le cadre. Le scan se fait automatiquement.
                   </p>
                 </div>
               </div>

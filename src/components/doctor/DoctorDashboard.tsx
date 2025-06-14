@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,6 +33,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ userId }) => {
   const loadActiveSessions = async () => {
     try {
       const sessions = await getActiveDoctorSessions(userId);
+      console.log('Loaded active sessions:', sessions);
       setActiveSessions(sessions);
     } catch (error) {
       console.error('Error loading active sessions:', error);
@@ -51,57 +51,59 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ userId }) => {
     try {
       console.log('Received patient data in dashboard:', patientData);
       
-      // Vérifier que les données sont valides
-      if (!patientData || !patientData.profile) {
-        console.error('Invalid patient data structure:', patientData);
+      // Validation stricte des données
+      if (!patientData?.profile?.user_id) {
+        console.error('Invalid patient data - missing user_id:', patientData);
         toast({
           variant: "destructive",
           title: "Données invalides",
-          description: "Les données du patient ne sont pas dans le bon format."
+          description: "Les données du patient sont incomplètes."
         });
         return;
       }
 
       const { profile, qrCodeId } = patientData;
+      const patientUserId = profile.user_id;
       
-      if (!profile.user_id) {
-        console.error('Missing user_id in profile:', profile);
+      console.log('Creating doctor session for patient:', patientUserId);
+      
+      try {
+        // Créer une session d'accès
+        const session = await createDoctorSession(patientUserId, userId, qrCodeId);
+        console.log('Doctor session created successfully:', session);
+        
+        // Enregistrer l'accès
+        await logAccess({
+          patient_id: patientUserId,
+          doctor_id: userId,
+          action: 'qr_scan',
+          details: { 
+            qr_code_id: qrCodeId,
+            patient_name: profile.name || profile.email,
+            access_type: 'doctor_dashboard_scan',
+            session_id: session.id
+          }
+        });
+
+        // Actualiser les sessions
+        await loadActiveSessions();
+        
+        // Sélectionner le patient
+        setSelectedPatientId(patientUserId);
+
+        toast({
+          title: "Accès accordé",
+          description: `Accès au dossier de ${profile.name || profile.email} pour 30 minutes.`
+        });
+        
+      } catch (sessionError) {
+        console.error('Error creating session:', sessionError);
         toast({
           variant: "destructive",
-          title: "Données incomplètes",
-          description: "L'identifiant du patient est manquant."
+          title: "Erreur de session",
+          description: "Impossible de créer la session d'accès. Vérifiez vos permissions."
         });
-        return;
       }
-
-      console.log('Creating doctor session for patient:', profile.user_id);
-      
-      // Créer une session d'accès
-      const session = await createDoctorSession(profile.user_id, userId);
-      console.log('Doctor session created:', session);
-      
-      // Enregistrer l'accès
-      await logAccess({
-        patient_id: profile.user_id,
-        doctor_id: userId,
-        action: 'qr_scan',
-        details: { 
-          qr_code_id: qrCodeId,
-          patient_name: profile.name || profile.email,
-          access_type: 'doctor_dashboard_scan'
-        }
-      });
-
-      // Actualiser les sessions
-      await loadActiveSessions();
-      
-      // Sélectionner le patient
-      setSelectedPatientId(profile.user_id);
-
-      toast({
-        title: "Accès accordé",
-        description: `Accès au dossier de ${profile.name || profile.email} pour 30 minutes.`
-      });
       
     } catch (error) {
       console.error('Error processing QR code scan:', error);
