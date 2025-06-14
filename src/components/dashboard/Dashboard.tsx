@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,10 +35,12 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
   const [isReminderFormOpen, setIsReminderFormOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'prescriptions' | 'reminders' | 'profile' | 'doctor' | 'admin'>('prescriptions');
   const [userRole, setUserRole] = useState<string>('user');
+  const [reminders, setReminders] = useState<any[]>([]);
   const { toast } = useToast();
   
   React.useEffect(() => {
     fetchUserProfile();
+    loadReminders();
   }, []);
   
   const fetchUserProfile = async () => {
@@ -65,6 +68,76 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
     }
   };
 
+  const loadReminders = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('reminders')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setReminders(data || []);
+    } catch (error) {
+      console.error('Error loading reminders:', error);
+    }
+  };
+
+  const handleReminderSave = async (reminder: any) => {
+    try {
+      const { data, error } = await supabase
+        .from('reminders')
+        .insert({
+          user_id: userId,
+          medication_name: reminder.medicationName,
+          time: reminder.time,
+          dosage: '1 comprimé',
+          frequency: reminder.days.length === 7 ? 'daily' : 'every_other_day'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      await loadReminders();
+      setIsReminderFormOpen(false);
+      toast({
+        title: "Rappel créé",
+        description: "Votre rappel a été créé avec succès."
+      });
+    } catch (error) {
+      console.error('Error saving reminder:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de créer le rappel."
+      });
+    }
+  };
+
+  const handleReminderDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('reminders')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      await loadReminders();
+    } catch (error) {
+      console.error('Error deleting reminder:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de supprimer le rappel."
+      });
+    }
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value as 'prescriptions' | 'reminders' | 'profile' | 'doctor' | 'admin');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -81,7 +154,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
         </div>
       </div>
 
-      <Tabs defaultValue="prescriptions" value={activeTab} onValueChange={setActiveTab}>
+      <Tabs defaultValue="prescriptions" value={activeTab} onValueChange={handleTabChange}>
         <TabsList>
           <TabsTrigger value="prescriptions" className="flex items-center gap-2">
             <FileText size={16} />
@@ -128,7 +201,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
                 Nouveau rappel
               </Button>
             </div>
-            <RemindersList userId={userId} />
+            <RemindersList reminders={reminders} onDelete={handleReminderDelete} />
           </TabsContent>
 
           <TabsContent value="profile" className="space-y-4">
@@ -156,8 +229,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
 
       {isReminderFormOpen && (
         <ReminderForm
-          userId={userId}
-          onComplete={() => setIsReminderFormOpen(false)}
+          onSave={handleReminderSave}
+          onCancel={() => setIsReminderFormOpen(false)}
         />
       )}
     </div>

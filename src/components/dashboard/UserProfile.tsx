@@ -14,19 +14,21 @@ interface UserProfileProps {
   userId: string;
 }
 
+interface ProfileState {
+  name: string | null;
+  email: string;
+  phone_number: string | null;
+  blood_type: string | null;
+  allergies: string | null;
+  chronic_diseases: string | null;
+  current_medications: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
+  emergency_contact_relationship: string | null;
+}
+
 const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
-  const [profile, setProfile] = useState<{
-    name: string | null;
-    email: string;
-    phone_number: string | null;
-    blood_type: string | null;
-    allergies: string | null;
-    chronic_diseases: string | null;
-    current_medications: string | null;
-    emergency_contact_name: string | null;
-    emergency_contact_phone: string | null;
-    emergency_contact_relationship: string | null;
-  } | null>(null);
+  const [profile, setProfile] = useState<ProfileState | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const { toast } = useToast();
@@ -39,7 +41,20 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
     try {
       setLoading(true);
       const userProfile = await getUserProfile(userId);
-      setProfile(userProfile);
+      if (userProfile) {
+        setProfile({
+          name: userProfile.name || null,
+          email: userProfile.email,
+          phone_number: userProfile.phone_number || null,
+          blood_type: userProfile.blood_type || null,
+          allergies: userProfile.allergies || null,
+          chronic_diseases: userProfile.chronic_diseases || null,
+          current_medications: userProfile.current_medications || null,
+          emergency_contact_name: userProfile.emergency_contact_name || null,
+          emergency_contact_phone: userProfile.emergency_contact_phone || null,
+          emergency_contact_relationship: userProfile.emergency_contact_relationship || null,
+        });
+      }
     } catch (error) {
       console.error('Error loading user profile:', error);
       toast({
@@ -83,7 +98,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
     setProfile(prevProfile => ({
       ...prevProfile,
       [name]: value,
-    } as any));
+    } as ProfileState));
   };
 
   if (loading) {
