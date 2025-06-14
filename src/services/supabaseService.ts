@@ -277,12 +277,21 @@ export const validateQRCode = async (qrCode: string): Promise<{ valid: boolean; 
 export const createDoctorSession = async (patientId: string, doctorId: string, qrCodeId?: string): Promise<DoctorAccessSession> => {
   console.log('Creating doctor session:', { patientId, doctorId, qrCodeId });
   
-  // Utiliser le service role pour créer la session sans restriction RLS
-  const { data, error } = await supabase.rpc('create_doctor_session', {
-    p_patient_id: patientId,
-    p_doctor_id: doctorId,
-    p_qr_code_id: qrCodeId || null
-  });
+  // Créer directement la session sans utiliser une fonction RPC
+  const sessionData = {
+    patient_id: patientId,
+    doctor_id: doctorId,
+    qr_code_id: qrCodeId || null,
+    access_granted_at: new Date().toISOString(),
+    expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes
+    is_active: true
+  };
+
+  const { data, error } = await supabase
+    .from('doctor_access_sessions')
+    .insert(sessionData)
+    .select()
+    .single();
   
   if (error) {
     console.error('Error creating doctor session:', error);
