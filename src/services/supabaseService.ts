@@ -423,10 +423,10 @@ export const generateDoctorAccessKey = async (userId: string): Promise<string> =
   return accessKey;
 };
 
-// Fonction utilitaire pour nettoyer les données expirées
+// Fonction utilitaire pour nettoyer les données expirées - utilise la fonction existante
 export const cleanupExpiredData = async (): Promise<void> => {
   try {
-    const { error } = await supabase.rpc('cleanup_expired_data');
+    const { error } = await supabase.rpc('cleanup_expired_sessions');
     if (error) {
       console.error('Error cleaning up expired data:', error);
     }
