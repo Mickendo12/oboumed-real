@@ -194,20 +194,20 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
         <CardContent className="px-2 xs:px-3 sm:px-6">
           <div className="space-y-2 xs:space-y-3 sm:space-y-4">
             <div>
-              <h4 className="font-medium mb-1 xs:mb-2 text-xs xs:text-sm sm:text-base">Allergies</h4>
-              <p className="text-[10px] xs:text-xs sm:text-sm text-gray-600 bg-red-50 p-2 xs:p-3 rounded border border-red-200">
+              <h4 className="font-medium mb-1 xs:mb-2 text-red-700 dark:text-red-400 text-xs xs:text-sm sm:text-base">Allergies</h4>
+              <p className="text-[10px] xs:text-xs sm:text-sm text-red-900 dark:text-red-100 bg-red-50 dark:bg-red-950/50 p-2 xs:p-3 rounded border border-red-200 dark:border-red-800">
                 {profile.allergies || 'Aucune allergie connue'}
               </p>
             </div>
             <div>
-              <h4 className="font-medium mb-1 xs:mb-2 text-xs xs:text-sm sm:text-base">Maladies chroniques</h4>
-              <p className="text-[10px] xs:text-xs sm:text-sm text-gray-600 bg-gray-50 p-2 xs:p-3 rounded border">
+              <h4 className="font-medium mb-1 xs:mb-2 text-slate-700 dark:text-slate-300 text-xs xs:text-sm sm:text-base">Maladies chroniques</h4>
+              <p className="text-[10px] xs:text-xs sm:text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-2 xs:p-3 rounded border border-gray-200 dark:border-gray-700">
                 {profile.chronic_diseases || 'Aucune maladie chronique'}
               </p>
             </div>
             <div>
-              <h4 className="font-medium mb-1 xs:mb-2 text-xs xs:text-sm sm:text-base">Traitements actuels</h4>
-              <p className="text-[10px] xs:text-xs sm:text-sm text-gray-600 bg-blue-50 p-2 xs:p-3 rounded border border-blue-200">
+              <h4 className="font-medium mb-1 xs:mb-2 text-blue-700 dark:text-blue-400 text-xs xs:text-sm sm:text-base">Traitements actuels</h4>
+              <p className="text-[10px] xs:text-xs sm:text-sm text-blue-900 dark:text-blue-100 bg-blue-50 dark:bg-blue-950/50 p-2 xs:p-3 rounded border border-blue-200 dark:border-blue-800">
                 {profile.current_medications || 'Aucun traitement en cours'}
               </p>
             </div>
