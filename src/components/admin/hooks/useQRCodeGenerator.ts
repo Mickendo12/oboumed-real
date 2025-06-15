@@ -24,12 +24,17 @@ export const useQRCodeGenerator = () => {
   useEffect(() => {
     if (selectedUserId) {
       loadQRCodes();
+    } else {
+      setQrCodes([]);
     }
   }, [selectedUserId]);
 
   const loadProfiles = async () => {
     try {
+      setLoadingProfiles(true);
+      console.log('Loading profiles for QR generator...');
       const allProfiles = await getAllProfiles();
+      console.log('Profiles loaded for QR generator:', allProfiles);
       setProfiles(allProfiles);
     } catch (error) {
       console.error('Error loading profiles:', error);
@@ -44,8 +49,12 @@ export const useQRCodeGenerator = () => {
   };
 
   const loadQRCodes = async () => {
+    if (!selectedUserId) return;
+    
     try {
+      console.log('Loading QR codes for user:', selectedUserId);
       const userQrCodes = await getQRCodesForUser(selectedUserId);
+      console.log('QR codes loaded:', userQrCodes);
       setQrCodes(userQrCodes);
     } catch (error) {
       console.error('Error loading QR codes:', error);
@@ -69,7 +78,9 @@ export const useQRCodeGenerator = () => {
 
     try {
       setLoading(true);
+      console.log('Generating QR code for user:', selectedUserId);
       const qrCode = await generateQRCodeForUser(selectedUserId);
+      console.log('QR code generated:', qrCode);
       await loadQRCodes();
       
       toast({
@@ -96,6 +107,7 @@ export const useQRCodeGenerator = () => {
         description: `${type} copié dans le presse-papiers.`
       });
     } catch (error) {
+      console.error('Error copying to clipboard:', error);
       toast({
         variant: "destructive",
         title: "Erreur",

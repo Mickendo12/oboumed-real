@@ -1,17 +1,20 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Shield, Activity, QrCode } from 'lucide-react';
+import { Users, Activity, QrCode } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import QRCodeGenerator from './QRCodeGenerator';
+import UserList from './components/UserList';
+import AccessLogsList from './components/AccessLogsList';
 import { 
   getAllProfiles, 
   getAccessLogs, 
   updateUserAccessStatus, 
   generateDoctorAccessKey,
+  generateQRCodeForUser,
   Profile, 
   AccessLog 
 } from '@/services/supabaseService';
@@ -20,7 +23,7 @@ const AdminDashboard: React.FC = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [accessLogs, setAccessLogs] = useState<AccessLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showQRGenerator, setShowQRGenerator] = useState(false);
+  const [userActionLoading, setUserActionLoading] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -30,10 +33,13 @@ const AdminDashboard: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+      console.log('Loading admin data...');
       const [profilesData, logsData] = await Promise.all([
         getAllProfiles(),
         getAccessLogs()
       ]);
+      console.log('Profiles loaded:', profilesData);
+      console.log('Logs loaded:', logsData);
       setProfiles(profilesData);
       setAccessLogs(logsData);
     } catch (error) {
@@ -48,14 +54,15 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleRestrictAccess = async (userId: string, isRestricted: boolean) => {
+  const handleToggleAccess = async (userId: string, currentStatus: string) => {
     try {
-      const newStatus = isRestricted ? 'active' : 'restricted';
+      setUserActionLoading(userId);
+      const newStatus = currentStatus === 'restricted' ? 'active' : 'restricted';
       await updateUserAccessStatus(userId, newStatus);
       await loadData();
       toast({
         title: "Statut mis à jour",
-        description: `Accès ${isRestricted ? 'activé' : 'restreint'} avec succès.`
+        description: `Accès ${newStatus === 'active' ? 'activé' : 'restreint'} avec succès.`
       });
     } catch (error) {
       console.error('Error updating access status:', error);
@@ -64,11 +71,35 @@ const AdminDashboard: React.FC = () => {
         title: "Erreur",
         description: "Impossible de mettre à jour le statut d'accès."
       });
+    } finally {
+      setUserActionLoading(null);
+    }
+  };
+
+  const handleGenerateQRAndKey = async (userId: string) => {
+    try {
+      setUserActionLoading(userId);
+      const qrCode = await generateQRCodeForUser(userId);
+      await loadData();
+      toast({
+        title: "Code QR et clé générés",
+        description: "Le code QR et la clé d'accès ont été générés avec succès."
+      });
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de générer le code QR."
+      });
+    } finally {
+      setUserActionLoading(null);
     }
   };
 
   const handleGrantDoctorAccess = async (userId: string) => {
     try {
+      setUserActionLoading(userId);
       const accessKey = await generateDoctorAccessKey(userId);
       await loadData();
       toast({
@@ -82,23 +113,8 @@ const AdminDashboard: React.FC = () => {
         title: "Erreur",
         description: "Impossible d'accorder l'accès médecin."
       });
-    }
-  };
-
-  const getRoleBadgeVariant = (role: string) => {
-    switch (role) {
-      case 'admin': return 'destructive';
-      case 'doctor': return 'default';
-      default: return 'secondary';
-    }
-  };
-
-  const getAccessStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'active': return 'default';
-      case 'restricted': return 'destructive';
-      case 'expired': return 'secondary';
-      default: return 'secondary';
+    } finally {
+      setUserActionLoading(null);
     }
   };
 
@@ -136,110 +152,22 @@ const AdminDashboard: React.FC = () => {
           </TabsTrigger>
           <TabsTrigger value="qr">
             <QrCode size={16} className="mr-2" />
-            Codes QR
+            Générateur QR
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="users">
-          <Card className="dark-container">
-            <CardHeader>
-              <CardTitle>Gestion des utilisateurs</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nom</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Rôle</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {profiles.map((profile) => (
-                    <TableRow key={profile.id}>
-                      <TableCell>{profile.name || 'Non renseigné'}</TableCell>
-                      <TableCell>{profile.email}</TableCell>
-                      <TableCell>
-                        <Badge variant={getRoleBadgeVariant(profile.role)}>
-                          {profile.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getAccessStatusBadgeVariant(profile.access_status)}>
-                          {profile.access_status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant={profile.access_status === 'restricted' ? 'default' : 'destructive'}
-                            onClick={() => handleRestrictAccess(profile.user_id, profile.access_status === 'restricted')}
-                          >
-                            {profile.access_status === 'restricted' ? 'Activer' : 'Restreindre'}
-                          </Button>
-                          {profile.role === 'user' && (
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => handleGrantDoctorAccess(profile.user_id)}
-                            >
-                              <Shield size={16} className="mr-1" />
-                              Médecin
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <UserList
+            profiles={profiles}
+            userActionLoading={userActionLoading}
+            onToggleAccess={handleToggleAccess}
+            onGenerateQRAndKey={handleGenerateQRAndKey}
+            onGrantDoctorAccess={handleGrantDoctorAccess}
+          />
         </TabsContent>
 
         <TabsContent value="logs">
-          <Card className="dark-container">
-            <CardHeader>
-              <CardTitle>Logs d'accès médical</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Patient</TableHead>
-                    <TableHead>Médecin</TableHead>
-                    <TableHead>Détails</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {accessLogs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell>
-                        {new Date(log.created_at).toLocaleString('fr-FR')}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{log.action}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        {(log as any).patient?.name || (log as any).patient?.email || 'Inconnu'}
-                      </TableCell>
-                      <TableCell>
-                        {(log as any).doctor?.name || (log as any).doctor?.email || 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        {log.details ? JSON.stringify(log.details, null, 2) : 'N/A'}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <AccessLogsList accessLogs={accessLogs} />
         </TabsContent>
 
         <TabsContent value="qr">
