@@ -4,14 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { QrCode, Camera, Upload, AlertCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { validateQRCode, getUserProfile } from '@/services/supabaseService';
+import { validateQRCode, getUserProfile, createDoctorSession } from '@/services/supabaseService';
 import jsQR from 'jsqr';
 
 interface QRCodeScannerProps {
   onScanSuccess: (patientData: any) => void;
+  doctorId: string;
 }
 
-const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
+const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }) => {
   const [isScanning, setIsScanning] = useState(false);
   const [loading, setLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -43,7 +44,6 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
         streamRef.current = stream;
         setIsScanning(true);
         
-        // Démarrer le scan automatique
         videoRef.current.onloadedmetadata = () => {
           startAutoScan();
         };
@@ -79,7 +79,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
         console.log('QR Code détecté via caméra:', qrCode.data);
         processQRCode(qrCode.data);
       }
-    }, 1000); // Scanner toutes les secondes
+    }, 1000);
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -166,10 +166,8 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
     try {
       setLoading(true);
       
-      // Nettoyer et extraire le code QR
       let cleanCode = qrCodeValue.trim();
       
-      // Si c'est une URL de notre système, extraire le code
       if (cleanCode.includes('/qr/')) {
         const parts = cleanCode.split('/qr/');
         cleanCode = parts[parts.length - 1];
@@ -177,7 +175,6 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
       
       console.log('Processing cleaned QR code:', cleanCode);
       
-      // Valider le QR code
       const validation = await validateQRCode(cleanCode);
       console.log('QR validation result:', validation);
       
@@ -190,7 +187,6 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
         return;
       }
       
-      // Récupérer le profil du patient
       const profile = await getUserProfile(validation.userId);
       console.log('Patient profile retrieved:', profile);
       
@@ -203,7 +199,6 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
         return;
       }
       
-      // Vérifier l'accès
       if (profile.access_status === 'restricted') {
         toast({
           variant: "destructive",
@@ -213,26 +208,28 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess }) => {
         return;
       }
       
-      // Préparer les données dans le format attendu
+      // Créer une session d'accès médecin
+      console.log('Creating doctor session...');
+      const session = await createDoctorSession(validation.userId, doctorId, validation.qrCodeId);
+      console.log('Doctor session created:', session);
+      
       const patientData = {
         profile: {
           ...profile,
-          user_id: validation.userId // S'assurer que user_id est présent
+          user_id: validation.userId
         },
-        qrCodeId: cleanCode
+        qrCodeId: validation.qrCodeId,
+        sessionId: session.id
       };
       
       console.log('Sending patient data to parent:', patientData);
       
-      // Arrêter la caméra
       stopCamera();
-      
-      // Envoyer les données au composant parent
       onScanSuccess(patientData);
       
       toast({
         title: "Accès accordé",
-        description: `Code QR valide pour ${profile.name || profile.email}`
+        description: `Session d'accès créée pour ${profile.name || profile.email} (30 minutes)`
       });
       
     } catch (error) {

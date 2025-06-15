@@ -249,8 +249,10 @@ export const deleteReminder = async (id: string): Promise<void> => {
   }
 };
 
-// QR Code functions
+// Fonctions QR Code améliorées
 export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => {
+  console.log('Generating QR code for user:', userId);
+  
   // Vérifier s'il existe déjà un QR code actif pour cet utilisateur
   const { data: existingQRCode } = await supabase
     .from('qr_codes')
@@ -261,6 +263,7 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
 
   // Si un QR code actif existe déjà, le retourner
   if (existingQRCode) {
+    console.log('Existing active QR code found:', existingQRCode);
     return {
       ...existingQRCode,
       status: (existingQRCode.status ?? 'active') as 'active' | 'expired' | 'used',
@@ -273,6 +276,7 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
     .update({ status: 'expired' })
     .eq('user_id', userId);
 
+  console.log('Calling generate_qr_code function...');
   const { data: qrCodeText, error: funcError } = await supabase.rpc('generate_qr_code', {
     patient_user_id: userId
   });
@@ -281,6 +285,8 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
     console.error('Error generating QR code text:', funcError);
     throw funcError;
   }
+  
+  console.log('Generated QR code text:', qrCodeText);
   
   const { data, error } = await supabase
     .from('qr_codes')
@@ -299,6 +305,7 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
     throw error;
   }
   
+  console.log('QR code created successfully:', data);
   return {
     ...data,
     status: (data.status ?? 'active') as 'active' | 'expired' | 'used',
@@ -323,12 +330,12 @@ export const getQRCodesForUser = async (userId: string): Promise<QRCode[]> => {
   }));
 };
 
-export const validateQRCode = async (qrCode: string): Promise<{ valid: boolean; userId?: string }> => {
+export const validateQRCode = async (qrCode: string): Promise<{ valid: boolean; userId?: string; qrCodeId?: string }> => {
   console.log('Validating QR code:', qrCode);
   
   const { data, error } = await supabase
     .from('qr_codes')
-    .select('user_id, status, expires_at')
+    .select('id, user_id, status, expires_at')
     .eq('qr_code', qrCode)
     .eq('status', 'active')
     .maybeSingle();
@@ -350,16 +357,15 @@ export const validateQRCode = async (qrCode: string): Promise<{ valid: boolean; 
   }
   
   console.log('QR code valid for user:', data.user_id);
-  return { valid: true, userId: data.user_id };
+  return { valid: true, userId: data.user_id, qrCodeId: data.id };
 };
 
-// Nouvelle fonction pour valider une clé d'accès
-export const validateAccessKey = async (accessKey: string): Promise<{ valid: boolean; userId?: string }> => {
+export const validateAccessKey = async (accessKey: string): Promise<{ valid: boolean; userId?: string; qrCodeId?: string }> => {
   console.log('Validating access key:', accessKey);
   
   const { data, error } = await supabase
     .from('qr_codes')
-    .select('user_id, status, expires_at')
+    .select('id, user_id, status, expires_at')
     .eq('access_key', accessKey)
     .eq('status', 'active')
     .maybeSingle();
@@ -381,10 +387,10 @@ export const validateAccessKey = async (accessKey: string): Promise<{ valid: boo
   }
   
   console.log('Access key valid for user:', data.user_id);
-  return { valid: true, userId: data.user_id };
+  return { valid: true, userId: data.user_id, qrCodeId: data.id };
 };
 
-// Doctor access session functions
+// Fonctions de session d'accès médecin améliorées
 export const createDoctorSession = async (patientId: string, doctorId: string, qrCodeId?: string): Promise<DoctorAccessSession> => {
   console.log('Creating doctor session:', { patientId, doctorId, qrCodeId });
   
@@ -398,6 +404,28 @@ export const createDoctorSession = async (patientId: string, doctorId: string, q
   if (!doctorProfile || doctorProfile.role !== 'doctor') {
     throw new Error('Seuls les médecins peuvent créer des sessions d\'accès');
   }
+  
+  // Vérifier le statut d'accès du patient
+  const { data: patientProfile } = await supabase
+    .from('profiles')
+    .select('access_status')
+    .eq('user_id', patientId)
+    .single();
+    
+  if (!patientProfile) {
+    throw new Error('Patient introuvable');
+  }
+  
+  if (patientProfile.access_status === 'restricted') {
+    throw new Error('L\'accès au dossier de ce patient a été restreint');
+  }
+  
+  // Marquer les anciennes sessions comme inactives
+  await supabase
+    .from('doctor_access_sessions')
+    .update({ is_active: false })
+    .eq('patient_id', patientId)
+    .eq('doctor_id', doctorId);
   
   const sessionData = {
     patient_id: patientId,
@@ -448,6 +476,25 @@ export const getActiveDoctorSessions = async (doctorId: string): Promise<DoctorA
   return data || [];
 };
 
+// Vérifier si un médecin a accès à un patient
+export const hasActiveSession = async (doctorId: string, patientId: string): Promise<boolean> => {
+  const { data, error } = await supabase
+    .from('doctor_access_sessions')
+    .select('id')
+    .eq('doctor_id', doctorId)
+    .eq('patient_id', patientId)
+    .eq('is_active', true)
+    .gt('expires_at', new Date().toISOString())
+    .maybeSingle();
+    
+  if (error) {
+    console.error('Error checking active session:', error);
+    return false;
+  }
+  
+  return !!data;
+};
+
 // Access log functions
 export const logAccess = async (log: Omit<AccessLog, 'id' | 'created_at'>): Promise<void> => {
   const { error } = await supabase
@@ -462,7 +509,6 @@ export const logAccess = async (log: Omit<AccessLog, 'id' | 'created_at'>): Prom
 export const getAccessLogs = async (): Promise<AccessLog[]> => {
   console.log('Fetching access logs...');
   
-  // Récupérer d'abord les logs
   const { data: logs, error: logsError } = await supabase
     .from('access_logs')
     .select('*')
@@ -478,7 +524,6 @@ export const getAccessLogs = async (): Promise<AccessLog[]> => {
     return [];
   }
 
-  // Récupérer les profils pour les relations
   const userIds = [...new Set([
     ...logs.map(log => log.patient_id).filter(Boolean),
     ...logs.map(log => log.doctor_id).filter(Boolean),
@@ -492,7 +537,6 @@ export const getAccessLogs = async (): Promise<AccessLog[]> => {
 
   const profilesMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
-  // Enrichir les logs avec les données des profils
   const enrichedLogs = logs.map(log => ({
     ...log,
     patient: profilesMap.get(log.patient_id),
