@@ -58,12 +58,12 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
   if (loading) {
     return (
       <Card className="dark-container">
-        <CardContent className="pt-6">
-          <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-gray-300 rounded w-1/4"></div>
-            <div className="space-y-2">
-              <div className="h-4 bg-gray-300 rounded"></div>
-              <div className="h-4 bg-gray-300 rounded w-5/6"></div>
+        <CardContent className="pt-3 xs:pt-4 sm:pt-6 px-2 xs:px-3 sm:px-6">
+          <div className="animate-pulse space-y-2 xs:space-y-3 sm:space-y-4">
+            <div className="h-3 xs:h-4 bg-gray-300 rounded w-1/4"></div>
+            <div className="space-y-1 xs:space-y-2">
+              <div className="h-3 xs:h-4 bg-gray-300 rounded"></div>
+              <div className="h-3 xs:h-4 bg-gray-300 rounded w-5/6"></div>
             </div>
           </div>
         </CardContent>
@@ -74,8 +74,8 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
   if (!profile) {
     return (
       <Card className="dark-container">
-        <CardContent className="pt-6">
-          <p className="text-muted-foreground">Impossible de charger le profil.</p>
+        <CardContent className="pt-3 xs:pt-4 sm:pt-6 px-2 xs:px-3 sm:px-6">
+          <p className="text-muted-foreground text-xs xs:text-sm sm:text-base">Impossible de charger le profil.</p>
         </CardContent>
       </Card>
     );
@@ -98,7 +98,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2 xs:space-y-3 sm:space-y-4 lg:space-y-6 px-2 xs:px-3 sm:px-4">
       {/* MODAL édition */}
       <EditProfileModal
         open={editOpen}
@@ -116,52 +116,52 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
       
       {/* Informations personnelles avec IMC */}
       <Card className="dark-container">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User size={20} />
+        <CardHeader className="pb-2 xs:pb-3 sm:pb-4">
+          <CardTitle className="flex items-center gap-1 xs:gap-1.5 sm:gap-2 text-sm xs:text-base sm:text-lg">
+            <User size={14} className="xs:w-4 xs:h-4 sm:w-5 sm:h-5" />
             Informations personnelles
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-[10px] xs:text-xs sm:text-sm">
             Vos informations de base, contact et données physiques
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="space-y-4">
+        <CardContent className="px-2 xs:px-3 sm:px-6">
+          <div className="grid gap-3 xs:gap-4 sm:gap-6 md:grid-cols-2">
+            <div className="space-y-2 xs:space-y-3 sm:space-y-4">
               <div>
-                <span className="font-medium">Nom complet:</span>
-                <p className="text-sm text-gray-600">
+                <span className="font-medium text-[10px] xs:text-xs sm:text-sm">Nom complet:</span>
+                <p className="text-[10px] xs:text-xs sm:text-sm text-gray-600">
                   {profile.name || 'Non renseigné'}
                 </p>
               </div>
               <div>
-                <span className="font-medium">Email:</span>
-                <p className="text-sm text-gray-600">{profile.email}</p>
+                <span className="font-medium text-[10px] xs:text-xs sm:text-sm">Email:</span>
+                <p className="text-[10px] xs:text-xs sm:text-sm text-gray-600 break-all">{profile.email}</p>
               </div>
               <div>
-                <span className="font-medium">Téléphone:</span>
-                <p className="text-sm text-gray-600">
+                <span className="font-medium text-[10px] xs:text-xs sm:text-sm">Téléphone:</span>
+                <p className="text-[10px] xs:text-xs sm:text-sm text-gray-600">
                   {profile.phone_number || 'Non renseigné'}
                 </p>
               </div>
               <div>
-                <span className="font-medium">Groupe sanguin:</span>
-                <p className="text-sm text-gray-600">
+                <span className="font-medium text-[10px] xs:text-xs sm:text-sm">Groupe sanguin:</span>
+                <p className="text-[10px] xs:text-xs sm:text-sm text-gray-600">
                   {profile.blood_type || 'Non renseigné'}
                 </p>
               </div>
               <div>
-                <span className="font-medium">Rôle:</span>
+                <span className="font-medium text-[10px] xs:text-xs sm:text-sm">Rôle:</span>
                 <div className="mt-1">
-                  <Badge variant={getRoleBadgeVariant(profile.role)}>
+                  <Badge variant={getRoleBadgeVariant(profile.role)} className="text-[9px] xs:text-[10px] sm:text-xs px-1 xs:px-1.5 sm:px-2 py-0.5 xs:py-1">
                     {getRoleDisplayName(profile.role)}
                   </Badge>
                 </div>
               </div>
               <div>
-                <span className="font-medium">Statut d'accès:</span>
+                <span className="font-medium text-[10px] xs:text-xs sm:text-sm">Statut d'accès:</span>
                 <div className="mt-1">
-                  <Badge variant={profile.access_status === 'active' ? 'default' : 'destructive'}>
+                  <Badge variant={profile.access_status === 'active' ? 'default' : 'destructive'} className="text-[9px] xs:text-[10px] sm:text-xs px-1 xs:px-1.5 sm:px-2 py-0.5 xs:py-1">
                     {profile.access_status === 'active' ? 'Actif' : 
                      profile.access_status === 'restricted' ? 'Restreint' : 'Expiré'}
                   </Badge>
@@ -173,8 +173,8 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
             </div>
           </div>
         </CardContent>
-        <CardFooter>
-          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+        <CardFooter className="px-2 xs:px-3 sm:px-6">
+          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)} className="text-[10px] xs:text-xs sm:text-sm px-2 xs:px-3 py-1 xs:py-1.5 sm:py-2">
             Modifier mes informations
           </Button>
         </CardFooter>
@@ -182,32 +182,32 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
 
       {/* Informations médicales */}
       <Card className="dark-container">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Heart size={20} />
+        <CardHeader className="pb-2 xs:pb-3 sm:pb-4">
+          <CardTitle className="flex items-center gap-1 xs:gap-1.5 sm:gap-2 text-sm xs:text-base sm:text-lg">
+            <Heart size={14} className="xs:w-4 xs:h-4 sm:w-5 sm:h-5" />
             Informations médicales
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-[10px] xs:text-xs sm:text-sm">
             Vos informations de santé importantes
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+        <CardContent className="px-2 xs:px-3 sm:px-6">
+          <div className="space-y-2 xs:space-y-3 sm:space-y-4">
             <div>
-              <h4 className="font-medium mb-2">Allergies</h4>
-              <p className="text-sm text-gray-600">
+              <h4 className="font-medium mb-1 xs:mb-2 text-xs xs:text-sm sm:text-base">Allergies</h4>
+              <p className="text-[10px] xs:text-xs sm:text-sm text-gray-600 bg-red-50 p-2 xs:p-3 rounded border border-red-200">
                 {profile.allergies || 'Aucune allergie connue'}
               </p>
             </div>
             <div>
-              <h4 className="font-medium mb-2">Maladies chroniques</h4>
-              <p className="text-sm text-gray-600">
+              <h4 className="font-medium mb-1 xs:mb-2 text-xs xs:text-sm sm:text-base">Maladies chroniques</h4>
+              <p className="text-[10px] xs:text-xs sm:text-sm text-gray-600 bg-gray-50 p-2 xs:p-3 rounded border">
                 {profile.chronic_diseases || 'Aucune maladie chronique'}
               </p>
             </div>
             <div>
-              <h4 className="font-medium mb-2">Traitements actuels</h4>
-              <p className="text-sm text-gray-600">
+              <h4 className="font-medium mb-1 xs:mb-2 text-xs xs:text-sm sm:text-base">Traitements actuels</h4>
+              <p className="text-[10px] xs:text-xs sm:text-sm text-gray-600 bg-blue-50 p-2 xs:p-3 rounded border border-blue-200">
                 {profile.current_medications || 'Aucun traitement en cours'}
               </p>
             </div>
@@ -217,32 +217,32 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
 
       {/* Contact d'urgence */}
       <Card className="dark-container">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Phone size={20} />
+        <CardHeader className="pb-2 xs:pb-3 sm:pb-4">
+          <CardTitle className="flex items-center gap-1 xs:gap-1.5 sm:gap-2 text-sm xs:text-base sm:text-lg">
+            <Phone size={14} className="xs:w-4 xs:h-4 sm:w-5 sm:h-5" />
             Contact d'urgence
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-[10px] xs:text-xs sm:text-sm">
             Personne à contacter en cas d'urgence médicale
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+        <CardContent className="px-2 xs:px-3 sm:px-6">
+          <div className="space-y-2 xs:space-y-3 sm:space-y-4">
             <div>
-              <span className="font-medium">Nom du contact:</span>
-              <p className="text-sm text-gray-600">
+              <span className="font-medium text-[10px] xs:text-xs sm:text-sm">Nom du contact:</span>
+              <p className="text-[10px] xs:text-xs sm:text-sm text-gray-600">
                 {profile.emergency_contact_name || 'Non renseigné'}
               </p>
             </div>
             <div>
-              <span className="font-medium">Téléphone:</span>
-              <p className="text-sm text-gray-600">
+              <span className="font-medium text-[10px] xs:text-xs sm:text-sm">Téléphone:</span>
+              <p className="text-[10px] xs:text-xs sm:text-sm text-gray-600">
                 {profile.emergency_contact_phone || 'Non renseigné'}
               </p>
             </div>
             <div>
-              <span className="font-medium">Relation:</span>
-              <p className="text-sm text-gray-600">
+              <span className="font-medium text-[10px] xs:text-xs sm:text-sm">Relation:</span>
+              <p className="text-[10px] xs:text-xs sm:text-sm text-gray-600">
                 {profile.emergency_contact_relationship || 'Non renseigné'}
               </p>
             </div>
