@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { addMedication } from './supabaseService';
 
@@ -21,6 +20,28 @@ export interface MedicationData {
   treatment_duration?: string;
   user_id: string;
   prescription_id?: string;
+}
+
+export interface PrescriptionWithMedications {
+  id: string;
+  user_id: string;
+  hospital_name?: string;
+  doctor_name?: string;
+  pharmacy_name?: string;
+  prescription_date?: string;
+  image_url?: string;
+  image_storage_path?: string;
+  created_at: string;
+  updated_at: string;
+  medications: Array<{
+    id: string;
+    name: string;
+    dosage?: string;
+    frequency?: string;
+    posology?: string;
+    comments?: string;
+    treatment_duration?: string;
+  }>;
 }
 
 export const createPrescription = async (prescriptionData: PrescriptionData) => {
@@ -100,4 +121,45 @@ export const uploadPrescriptionImage = async (
     console.error("Erreur lors du téléversement:", error);
     throw error;
   }
+};
+
+export const getPrescriptionsForUser = async (userId: string): Promise<PrescriptionWithMedications[]> => {
+  const { data: prescriptions, error: prescriptionsError } = await supabase
+    .from('prescriptions')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (prescriptionsError) {
+    throw prescriptionsError;
+  }
+
+  if (!prescriptions || prescriptions.length === 0) {
+    return [];
+  }
+
+  // Récupérer les médicaments pour chaque ordonnance
+  const prescriptionsWithMedications = await Promise.all(
+    prescriptions.map(async (prescription) => {
+      const { data: medications, error: medicationsError } = await supabase
+        .from('medications')
+        .select('id, name, dosage, frequency, posology, comments, treatment_duration')
+        .eq('prescription_id', prescription.id);
+
+      if (medicationsError) {
+        console.error('Error fetching medications for prescription:', medicationsError);
+        return {
+          ...prescription,
+          medications: []
+        };
+      }
+
+      return {
+        ...prescription,
+        medications: medications || []
+      };
+    })
+  );
+
+  return prescriptionsWithMedications;
 };
