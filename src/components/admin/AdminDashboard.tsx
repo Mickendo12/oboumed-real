@@ -120,20 +120,20 @@ const AdminDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-8 sm:py-12">
-        <div className="animate-pulse text-sm sm:text-base">Chargement des données admin...</div>
+      <div className="flex justify-center items-center py-6 xs:py-8 sm:py-12">
+        <div className="animate-pulse text-[10px] xs:text-xs sm:text-sm lg:text-base">Chargement des données admin...</div>
       </div>
     );
   }
 
   return (
-    <div className="container py-4 sm:py-6 space-y-4 sm:space-y-6 px-2 sm:px-4">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-        <h1 className="text-lg sm:text-xl md:text-2xl font-bold">Tableau de bord Admin</h1>
-        <div className="flex items-center gap-2 sm:gap-4">
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <Users size={16} className="sm:w-5 sm:h-5" />
-            <span className="text-xs sm:text-sm text-muted-foreground">
+    <div className="container py-2 xs:py-3 sm:py-4 lg:py-6 space-y-3 xs:space-y-4 sm:space-y-6 px-2 xs:px-3 sm:px-4 lg:px-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 xs:gap-3 sm:gap-4">
+        <h1 className="text-sm xs:text-base sm:text-lg lg:text-xl xl:text-2xl font-bold">Tableau de bord Admin</h1>
+        <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-4">
+          <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2">
+            <Users size={12} className="xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
+            <span className="text-[9px] xs:text-[10px] sm:text-xs lg:text-sm text-muted-foreground">
               {profiles.length} utilisateur{profiles.length > 1 ? 's' : ''}
             </span>
           </div>
@@ -141,25 +141,25 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 h-auto">
-          <TabsTrigger value="users" className="text-xs sm:text-sm py-2 sm:py-2.5">
-            <Users size={14} className="mr-1 sm:mr-2 sm:w-4 sm:h-4" />
-            <span className="hidden xs:inline">Utilisateurs</span>
-            <span className="xs:hidden">Users</span>
+        <TabsList className="grid w-full grid-cols-3 h-auto gap-0.5 xs:gap-1">
+          <TabsTrigger value="users" className="text-[8px] xs:text-[9px] sm:text-[10px] lg:text-xs py-1.5 xs:py-2 sm:py-2.5 px-1 xs:px-2">
+            <Users size={10} className="mr-0.5 xs:mr-1 sm:mr-2 xs:w-3 xs:h-3 sm:w-3.5 sm:h-3.5" />
+            <span className="hidden xxs:inline">Utilisateurs</span>
+            <span className="xxs:hidden">Users</span>
           </TabsTrigger>
-          <TabsTrigger value="qrcodes" className="text-xs sm:text-sm py-2 sm:py-2.5">
-            <QrCode size={14} className="mr-1 sm:mr-2 sm:w-4 sm:h-4" />
-            <span className="hidden xs:inline">Codes QR</span>
-            <span className="xs:hidden">QR</span>
+          <TabsTrigger value="qrcodes" className="text-[8px] xs:text-[9px] sm:text-[10px] lg:text-xs py-1.5 xs:py-2 sm:py-2.5 px-1 xs:px-2">
+            <QrCode size={10} className="mr-0.5 xs:mr-1 sm:mr-2 xs:w-3 xs:h-3 sm:w-3.5 sm:h-3.5" />
+            <span className="hidden xxs:inline">Codes QR</span>
+            <span className="xxs:hidden">QR</span>
           </TabsTrigger>
-          <TabsTrigger value="logs" className="text-xs sm:text-sm py-2 sm:py-2.5">
-            <Activity size={14} className="mr-1 sm:mr-2 sm:w-4 sm:h-4" />
-            <span className="hidden xs:inline">Logs d'accès</span>
-            <span className="xs:hidden">Logs</span>
+          <TabsTrigger value="logs" className="text-[8px] xs:text-[9px] sm:text-[10px] lg:text-xs py-1.5 xs:py-2 sm:py-2.5 px-1 xs:px-2">
+            <Activity size={10} className="mr-0.5 xs:mr-1 sm:mr-2 xs:w-3 xs:h-3 sm:w-3.5 sm:h-3.5" />
+            <span className="hidden xxs:inline">Logs d'accès</span>
+            <span className="xxs:hidden">Logs</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="users" className="mt-4 sm:mt-6">
+        <TabsContent value="users" className="mt-2 xs:mt-3 sm:mt-4 lg:mt-6">
           <UserList
             profiles={profiles}
             userActionLoading={userActionLoading}
@@ -169,11 +169,11 @@ const AdminDashboard: React.FC = () => {
           />
         </TabsContent>
 
-        <TabsContent value="qrcodes" className="mt-4 sm:mt-6">
+        <TabsContent value="qrcodes" className="mt-2 xs:mt-3 sm:mt-4 lg:mt-6">
           <QRCodeGenerator />
         </TabsContent>
 
-        <TabsContent value="logs" className="mt-4 sm:mt-6">
+        <TabsContent value="logs" className="mt-2 xs:mt-3 sm:mt-4 lg:mt-6">
           <AccessLogsList accessLogs={accessLogs} />
         </TabsContent>
       </Tabs>

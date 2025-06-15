@@ -6,7 +6,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-xs sm:text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-1 xs:gap-1.5 sm:gap-2 whitespace-nowrap rounded text-[10px] xs:text-[11px] sm:text-xs lg:text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-3 xs:[&_svg]:size-3.5 sm:[&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -21,10 +21,10 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-8 sm:h-10 px-3 sm:px-4 py-1.5 sm:py-2",
-        sm: "h-7 sm:h-9 rounded-md px-2 sm:px-3 text-xs",
-        lg: "h-9 sm:h-11 rounded-md px-6 sm:px-8",
-        icon: "h-8 w-8 sm:h-10 sm:w-10",
+        default: "h-6 xs:h-7 sm:h-8 lg:h-9 xl:h-10 px-2 xs:px-2.5 sm:px-3 lg:px-4 py-1 xs:py-1.5 sm:py-2",
+        sm: "h-5 xs:h-6 sm:h-7 lg:h-8 rounded px-1.5 xs:px-2 sm:px-2.5 lg:px-3 text-[9px] xs:text-[10px] sm:text-xs",
+        lg: "h-8 xs:h-9 sm:h-10 lg:h-11 xl:h-12 rounded px-4 xs:px-5 sm:px-6 lg:px-8",
+        icon: "h-6 w-6 xs:h-7 xs:w-7 sm:h-8 sm:w-8 lg:h-9 lg:w-9 xl:h-10 xl:w-10",
       },
     },
     defaultVariants: {

@@ -13,12 +13,13 @@ export default {
 	theme: {
 		container: {
 			center: true,
-			padding: '2rem',
+			padding: '1rem',
 			screens: {
 				'2xl': '1400px'
 			}
 		},
 		screens: {
+			'xxs': '375px',
 			'xs': '475px',
 			'sm': '640px',
 			'md': '768px',
@@ -100,6 +101,12 @@ export default {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.3s ease-out'
+			},
+			fontSize: {
+				'xxs': '0.625rem',
+			},
+			spacing: {
+				'18': '4.5rem',
 			}
 		}
 	},

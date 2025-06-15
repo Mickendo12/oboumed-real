@@ -43,70 +43,70 @@ const QRCodeCard: React.FC<QRCodeCardProps> = ({ qrCode, userName, userEmail, on
 
   return (
     <Card className="w-full">
-      <CardHeader className="pb-2 sm:pb-3 md:pb-4 px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-6">
-        <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <QrCode size={16} className="sm:w-4 sm:h-4 md:w-5 md:h-5" />
-            <span className="text-xs sm:text-sm md:text-base font-medium">Code QR généré</span>
+      <CardHeader className="pb-1 xs:pb-2 sm:pb-3 lg:pb-4 px-2 xs:px-3 sm:px-4 lg:px-6 pt-2 xs:pt-3 sm:pt-4 lg:pt-6">
+        <CardTitle className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-1.5 xs:gap-2">
+          <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2">
+            <QrCode size={12} className="xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
+            <span className="text-[10px] xs:text-xs sm:text-sm lg:text-base font-medium">Code QR généré</span>
           </div>
           <Button
             size="sm"
             variant="outline"
             onClick={downloadQRCode}
-            className="flex items-center gap-1 text-[10px] sm:text-xs md:text-sm w-full sm:w-auto px-2 sm:px-3 py-1 sm:py-1.5 h-auto"
+            className="flex items-center gap-0.5 xs:gap-1 text-[8px] xs:text-[9px] sm:text-[10px] lg:text-xs w-full xs:w-auto px-1.5 xs:px-2 sm:px-3 py-1 xs:py-1.5 h-auto"
           >
-            <Download size={10} className="sm:w-3 sm:h-3 md:w-3.5 md:h-3.5" />
-            <span className="hidden xs:inline">Télécharger PNG</span>
-            <span className="xs:hidden">PNG</span>
+            <Download size={8} className="xs:w-2.5 xs:h-2.5 sm:w-3 sm:h-3 lg:w-3.5 lg:h-3.5" />
+            <span className="hidden xxs:inline">Télécharger PNG</span>
+            <span className="xxs:hidden">PNG</span>
           </Button>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2 sm:space-y-3 md:space-y-4 px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6">
-        <div ref={qrCardRef} className="bg-white rounded-lg border inline-block w-full flex justify-center">
-          <div className="flex flex-col items-center text-center p-2 sm:p-3 md:p-4">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32">
+      <CardContent className="space-y-1.5 xs:space-y-2 sm:space-y-3 lg:space-y-4 px-2 xs:px-3 sm:px-4 lg:px-6 pb-2 xs:pb-3 sm:pb-4 lg:pb-6">
+        <div ref={qrCardRef} className="bg-white rounded border inline-block w-full flex justify-center">
+          <div className="flex flex-col items-center text-center p-1.5 xs:p-2 sm:p-3 lg:p-4">
+            <div className="w-16 h-16 xs:w-20 xs:h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 xl:w-32 xl:h-32">
               <QRCodeDisplay 
                 value={secureUrl}
-                size={80}
+                size={64}
               />
             </div>
             
-            <div className="px-1 sm:px-2 pb-1 space-y-0 mt-1 sm:mt-2">
-              <div className="text-[7px] sm:text-[8px] md:text-[9px] lg:text-[10px] font-medium text-blue-600 uppercase tracking-wide break-words max-w-[80px] sm:max-w-[100px] md:max-w-[120px]">
+            <div className="px-0.5 xs:px-1 sm:px-2 pb-0.5 xs:pb-1 space-y-0 mt-0.5 xs:mt-1 sm:mt-2">
+              <div className="text-[6px] xs:text-[7px] sm:text-[8px] lg:text-[9px] xl:text-[10px] font-medium text-blue-600 uppercase tracking-wide break-words max-w-[60px] xs:max-w-[80px] sm:max-w-[100px] lg:max-w-[120px]">
                 {userName || 'NOM NON RENSEIGNÉ'}
               </div>
-              <div className="text-[6px] sm:text-[7px] md:text-[8px] text-gray-600">
+              <div className="text-[5px] xs:text-[6px] sm:text-[7px] lg:text-[8px] text-gray-600">
                 Dossier Médical - ObouMed
               </div>
-              <div className="text-[6px] sm:text-[7px] md:text-[8px] font-mono text-gray-800 break-all max-w-[80px] sm:max-w-[100px] md:max-w-[120px]">
+              <div className="text-[5px] xs:text-[6px] sm:text-[7px] lg:text-[8px] font-mono text-gray-800 break-all max-w-[60px] xs:max-w-[80px] sm:max-w-[100px] lg:max-w-[120px]">
                 {qrCode.access_key}
               </div>
             </div>
           </div>
         </div>
 
-        <div className="space-y-1.5 sm:space-y-2">
-          <p className="text-[10px] sm:text-xs md:text-sm font-medium">URL du QR Code:</p>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 sm:gap-2">
-            <code className="flex-1 p-1.5 sm:p-2 bg-gray-100 dark:bg-gray-800 rounded text-[8px] sm:text-[10px] md:text-xs break-all min-h-[2rem] sm:min-h-[2.5rem] overflow-hidden leading-tight">
+        <div className="space-y-1 xs:space-y-1.5 sm:space-y-2">
+          <p className="text-[8px] xs:text-[9px] sm:text-[10px] lg:text-xs font-medium">URL du QR Code:</p>
+          <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-1 xs:gap-1.5 sm:gap-2">
+            <code className="flex-1 p-1 xs:p-1.5 sm:p-2 bg-gray-100 dark:bg-gray-800 rounded text-[6px] xs:text-[7px] sm:text-[8px] lg:text-[10px] break-all min-h-[1.5rem] xs:min-h-[2rem] sm:min-h-[2.5rem] overflow-hidden leading-tight">
               {secureUrl}
             </code>
             <Button
               size="sm"
               variant="outline"
               onClick={() => onCopy(secureUrl, 'URL')}
-              className="w-full sm:w-auto px-2 sm:px-3 py-1 sm:py-1.5 h-auto text-[10px] sm:text-xs"
+              className="w-full xs:w-auto px-1.5 xs:px-2 sm:px-3 py-1 xs:py-1.5 h-auto text-[8px] xs:text-[9px] sm:text-[10px]"
             >
-              <Copy size={10} className="sm:w-3 sm:h-3" />
-              <span className="ml-1 sm:hidden">Copier</span>
+              <Copy size={8} className="xs:w-2.5 xs:h-2.5 sm:w-3 sm:h-3" />
+              <span className="ml-0.5 xs:hidden">Copier</span>
             </Button>
           </div>
         </div>
         
-        <div className="bg-green-50 dark:bg-green-900/20 p-2 sm:p-3 rounded-lg">
-          <div className="flex items-start gap-1.5 sm:gap-2">
-            <CheckCircle size={12} className="text-green-600 mt-0.5 flex-shrink-0 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4" />
-            <p className="text-[10px] sm:text-xs md:text-sm text-green-800 dark:text-green-200 leading-relaxed">
+        <div className="bg-green-50 dark:bg-green-900/20 p-1.5 xs:p-2 sm:p-3 rounded">
+          <div className="flex items-start gap-1 xs:gap-1.5 sm:gap-2">
+            <CheckCircle size={10} className="text-green-600 mt-0.5 flex-shrink-0 xs:w-3 xs:h-3 sm:w-3.5 sm:h-3.5 lg:w-4 lg:h-4" />
+            <p className="text-[8px] xs:text-[9px] sm:text-[10px] lg:text-xs text-green-800 dark:text-green-200 leading-relaxed">
               Scanner ce QR code donne accès au dossier médical public du patient.
             </p>
           </div>
