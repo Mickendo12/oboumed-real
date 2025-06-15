@@ -78,6 +78,10 @@ export interface AccessLog {
   ip_address?: string;
   user_agent?: string;
   created_at: string;
+  // Relations pour les noms d'affichage
+  patient?: { name?: string; email?: string };
+  doctor?: { name?: string; email?: string };
+  admin?: { name?: string; email?: string };
 }
 
 // Profile functions
@@ -95,7 +99,6 @@ export const getUserProfile = async (userId: string): Promise<Profile | null> =>
 
   if (!data) return null;
 
-  // Correction : cast explicite du champ 'role'
   return {
     ...data,
     role: (data.role ?? 'user') as 'admin' | 'doctor' | 'user',
@@ -136,15 +139,18 @@ export const updateUserProfile = async (userId: string, updates: Partial<Profile
 };
 
 export const getAllProfiles = async (): Promise<Profile[]> => {
+  console.log('Fetching all profiles...');
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
     .order('created_at', { ascending: false });
 
   if (error) {
+    console.error('Error fetching profiles:', error);
     throw error;
   }
 
+  console.log('Profiles fetched successfully:', data?.length || 0, 'profiles');
   return (data || []).map(p => ({
     ...p,
     role: (p.role ?? 'user') as 'admin' | 'doctor' | 'user',
@@ -454,24 +460,49 @@ export const logAccess = async (log: Omit<AccessLog, 'id' | 'created_at'>): Prom
 };
 
 export const getAccessLogs = async (): Promise<AccessLog[]> => {
-  const { data, error } = await supabase
+  console.log('Fetching access logs...');
+  
+  // Récupérer d'abord les logs
+  const { data: logs, error: logsError } = await supabase
     .from('access_logs')
-    .select(`
-      *,
-      patient:profiles!access_logs_patient_id_fkey(name, email),
-      doctor:profiles!access_logs_doctor_id_fkey(name, email)
-    `)
+    .select('*')
     .order('created_at', { ascending: false });
     
-  if (error) {
-    console.error('Error fetching access logs:', error);
-    throw error;
+  if (logsError) {
+    console.error('Error fetching access logs:', logsError);
+    throw logsError;
   }
-  
-  return (data || []).map(log => ({
+
+  if (!logs || logs.length === 0) {
+    console.log('No access logs found');
+    return [];
+  }
+
+  // Récupérer les profils pour les relations
+  const userIds = [...new Set([
+    ...logs.map(log => log.patient_id).filter(Boolean),
+    ...logs.map(log => log.doctor_id).filter(Boolean),
+    ...logs.map(log => log.admin_id).filter(Boolean)
+  ])];
+
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('user_id, name, email')
+    .in('user_id', userIds);
+
+  const profilesMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+
+  // Enrichir les logs avec les données des profils
+  const enrichedLogs = logs.map(log => ({
     ...log,
+    patient: profilesMap.get(log.patient_id),
+    doctor: log.doctor_id ? profilesMap.get(log.doctor_id) : undefined,
+    admin: log.admin_id ? profilesMap.get(log.admin_id) : undefined,
     ip_address: log.ip_address ? String(log.ip_address) : undefined
-  })) as AccessLog[];
+  }));
+
+  console.log('Access logs fetched successfully:', enrichedLogs.length, 'logs');
+  return enrichedLogs as AccessLog[];
 };
 
 // Admin functions
