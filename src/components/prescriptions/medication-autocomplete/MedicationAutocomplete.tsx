@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Check, ChevronsUpDown, Plus, Loader2 } from 'lucide-react';
+import { Check, ChevronsUpDown, Plus, Loader2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { searchMedicationByName } from '@/services/medicationApiService';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,12 +31,14 @@ const MedicationAutocomplete: React.FC<MedicationAutocompleteProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+  const [manualValue, setManualValue] = useState("");
   const [medications, setMedications] = useState<Medication[]>([]);
   const [loading, setLoading] = useState(false);
+  const [useManualEntry, setUseManualEntry] = useState(false);
 
   useEffect(() => {
     const searchMedications = async () => {
-      if (searchValue.length < 2) {
+      if (searchValue.length < 2 || useManualEntry) {
         setMedications([]);
         return;
       }
@@ -78,63 +81,19 @@ const MedicationAutocomplete: React.FC<MedicationAutocompleteProps> = ({
 
     const debounceTimer = setTimeout(searchMedications, 300);
     return () => clearTimeout(debounceTimer);
-  }, [searchValue]);
+  }, [searchValue, useManualEntry]);
 
-  const selectedMedication = medications.find(med => med.name === value);
-
-  const handleAddNewMedication = async () => {
-    if (searchValue.trim()) {
-      try {
-        // Ajouter le médicament personnalisé à la base de données
-        const { data: user } = await supabase.auth.getUser();
-        if (user.user) {
-          const { data: newMed, error } = await supabase
-            .from('custom_medications')
-            .insert({
-              name: searchValue.trim(),
-              dosage: "",
-              form: "Non spécifié",
-              created_by: user.user.id,
-              usage_count: 1
-            })
-            .select()
-            .single();
-
-          if (!error && newMed) {
-            const newMedication: Medication = {
-              id: newMed.id,
-              name: newMed.name,
-              dosage: newMed.dosage || "",
-              form: newMed.form || "Non spécifié",
-              activeIngredient: newMed.active_ingredient || "",
-              manufacturer: newMed.manufacturer || ""
-            };
-            onSelect(newMedication);
-          } else {
-            // Fallback si l'ajout échoue
-            const fallbackMedication: Medication = {
-              id: `custom_${Date.now()}`,
-              name: searchValue.trim(),
-              dosage: "",
-              form: "Non spécifié"
-            };
-            onSelect(fallbackMedication);
-          }
-        }
-      } catch (error) {
-        console.error('Error adding custom medication:', error);
-        // Fallback en cas d'erreur
-        const fallbackMedication: Medication = {
-          id: `custom_${Date.now()}`,
-          name: searchValue.trim(),
-          dosage: "",
-          form: "Non spécifié"
-        };
-        onSelect(fallbackMedication);
-      }
-      
-      setOpen(false);
-      setSearchValue("");
+  const handleManualSubmit = () => {
+    if (manualValue.trim()) {
+      const manualMedication: Medication = {
+        id: `manual_${Date.now()}`,
+        name: manualValue.trim(),
+        dosage: "",
+        form: "Saisie manuelle"
+      };
+      onSelect(manualMedication);
+      setManualValue("");
+      setUseManualEntry(false);
     }
   };
 
@@ -142,7 +101,6 @@ const MedicationAutocomplete: React.FC<MedicationAutocompleteProps> = ({
     // Incrémenter le compteur d'usage si c'est un médicament personnalisé
     if (medication.id.length === 36) { // UUID format
       try {
-        // Récupérer le compteur actuel et l'incrémenter
         const { data: currentMed } = await supabase
           .from('custom_medications')
           .select('usage_count')
@@ -165,103 +123,127 @@ const MedicationAutocomplete: React.FC<MedicationAutocompleteProps> = ({
     setSearchValue("");
   };
 
-  const handleManualEntry = () => {
-    if (searchValue.trim()) {
-      const manualMedication: Medication = {
-        id: `manual_${Date.now()}`,
-        name: searchValue.trim(),
-        dosage: "",
-        form: "Saisie manuelle"
-      };
-      onSelect(manualMedication);
-      setOpen(false);
-      setSearchValue("");
-    }
-  };
+  if (useManualEntry) {
+    return (
+      <div className="space-y-2">
+        <div className="flex gap-2">
+          <Input
+            value={manualValue}
+            onChange={(e) => setManualValue(e.target.value)}
+            placeholder="Tapez le nom du médicament..."
+            className="flex-1"
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                handleManualSubmit();
+              }
+            }}
+          />
+          <Button onClick={handleManualSubmit} disabled={!manualValue.trim()}>
+            Valider
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setUseManualEntry(false);
+              setManualValue("");
+            }}
+          >
+            <X size={16} />
+          </Button>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Saisissez le nom du médicament manuellement et cliquez sur "Valider"
+        </p>
+      </div>
+    );
+  }
 
-  const showAddButton = searchValue.length > 2 && 
-    !medications.some(med => med.name.toLowerCase() === searchValue.toLowerCase()) &&
-    !loading;
+  const selectedMedication = medications.find(med => med.name === value);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between"
-        >
-          {selectedMedication ? selectedMedication.name : placeholder}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-full p-0">
-        <Command>
-          <CommandInput 
-            placeholder="Tapez pour rechercher ou saisir manuellement..." 
-            value={searchValue}
-            onValueChange={setSearchValue}
-          />
-          <CommandList>
-            <CommandEmpty>
-              {loading ? (
-                <div className="flex items-center justify-center py-2">
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Recherche en cours...
-                </div>
-              ) : (
-                "Aucun médicament trouvé."
-              )}
-            </CommandEmpty>
-            {medications && medications.length > 0 && (
-              <CommandGroup heading="Médicaments trouvés">
-                {medications.map((medication) => (
-                  <CommandItem
-                    key={medication.id}
-                    value={medication.name}
-                    onSelect={() => handleSelectMedication(medication)}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === medication.name ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    <div className="flex flex-col flex-1">
-                      <span className="font-medium">{medication.name}</span>
-                      <div className="text-sm text-muted-foreground space-y-1">
-                        {medication.dosage && medication.form && (
-                          <div>{medication.dosage} - {medication.form}</div>
-                        )}
-                        {medication.activeIngredient && (
-                          <div className="text-xs">PA: {medication.activeIngredient}</div>
-                        )}
-                        {medication.manufacturer && (
-                          <div className="text-xs">Lab: {medication.manufacturer}</div>
-                        )}
-                      </div>
+    <div className="space-y-2">
+      <div className="flex gap-2">
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="flex-1 justify-between"
+            >
+              {selectedMedication ? selectedMedication.name : placeholder}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full p-0">
+            <Command>
+              <CommandInput 
+                placeholder="Tapez pour rechercher..." 
+                value={searchValue}
+                onValueChange={setSearchValue}
+              />
+              <CommandList>
+                <CommandEmpty>
+                  {loading ? (
+                    <div className="flex items-center justify-center py-2">
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Recherche en cours...
                     </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
-            {showAddButton && (
-              <CommandGroup heading="Ajouter">
-                <CommandItem onSelect={handleAddNewMedication}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  <span>Ajouter "{searchValue}" à la base</span>
-                </CommandItem>
-                <CommandItem onSelect={handleManualEntry}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  <span>Saisir "{searchValue}" manuellement</span>
-                </CommandItem>
-              </CommandGroup>
-            )}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+                  ) : (
+                    "Aucun médicament trouvé."
+                  )}
+                </CommandEmpty>
+                {medications && medications.length > 0 && (
+                  <CommandGroup heading="Médicaments trouvés">
+                    {medications.map((medication) => (
+                      <CommandItem
+                        key={medication.id}
+                        value={medication.name}
+                        onSelect={() => handleSelectMedication(medication)}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            value === medication.name ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        <div className="flex flex-col flex-1">
+                          <span className="font-medium">{medication.name}</span>
+                          <div className="text-sm text-muted-foreground space-y-1">
+                            {medication.dosage && medication.form && (
+                              <div>{medication.dosage} - {medication.form}</div>
+                            )}
+                            {medication.activeIngredient && (
+                              <div className="text-xs">PA: {medication.activeIngredient}</div>
+                            )}
+                            {medication.manufacturer && (
+                              <div className="text-xs">Lab: {medication.manufacturer}</div>
+                            )}
+                          </div>
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )}
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+        
+        <Button 
+          variant="outline" 
+          onClick={() => setUseManualEntry(true)}
+          className="shrink-0"
+        >
+          <Plus size={16} className="mr-1" />
+          Manuel
+        </Button>
+      </div>
+      
+      <p className="text-sm text-muted-foreground">
+        Recherchez dans la base ou cliquez sur "Manuel" pour saisir directement
+      </p>
+    </div>
   );
 };
 
