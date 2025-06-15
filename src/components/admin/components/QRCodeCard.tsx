@@ -1,3 +1,4 @@
+
 import React, { useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -62,7 +63,7 @@ const QRCodeCard: React.FC<QRCodeCardProps> = ({ qrCode, userName, userEmail, on
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div ref={qrCardRef} className="bg-white p-6 rounded-lg border">
+        <div ref={qrCardRef} className="bg-white p-2 rounded-lg border">
           <div className="flex flex-col items-center text-center">
             {/* QR Code */}
             <QRCodeDisplay 
@@ -71,15 +72,15 @@ const QRCodeCard: React.FC<QRCodeCardProps> = ({ qrCode, userName, userEmail, on
             />
             
             {/* Informations minimalistes sous le QR code */}
-            <div className="mt-3 space-y-1">
-              <div className="text-sm font-medium text-gray-900 uppercase tracking-wide">
+            <div className="mt-1 space-y-0.5">
+              <div className="text-xs font-medium text-blue-600 uppercase tracking-wide">
                 {userName || 'NOM NON RENSEIGNÉ'}
               </div>
-              <div className="text-xs text-gray-600">
+              <div className="text-[10px] text-gray-600">
                 Dossier Médical - ObouMed
               </div>
-              <div className="text-xs font-mono text-gray-800 mt-2">
-                Clé: {qrCode.access_key}
+              <div className="text-[10px] font-mono text-gray-800">
+                {qrCode.access_key}
               </div>
             </div>
           </div>
