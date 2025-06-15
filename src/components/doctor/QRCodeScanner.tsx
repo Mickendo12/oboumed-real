@@ -2,8 +2,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { QrCode, Camera, Upload, AlertCircle } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { Camera, X, Scan } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { validateQRCode, getUserProfile, createDoctorSession } from '@/services/supabaseService';
 import jsQR from 'jsqr';
 
@@ -16,180 +16,111 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
   const [isScanning, setIsScanning] = useState(false);
   const [loading, setLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const scanIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const scanIntervalRef = useRef<number | null>(null);
   const { toast } = useToast();
 
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    if (scanIntervalRef.current) {
-      clearInterval(scanIntervalRef.current);
-      scanIntervalRef.current = null;
-    }
-    setIsScanning(false);
-  };
+  useEffect(() => {
+    return () => {
+      stopScanning();
+    };
+  }, []);
 
-  const startCamera = async () => {
+  const startScanning = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
+      setIsScanning(true);
+      
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
       });
+
+      streamRef.current = stream;
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        streamRef.current = stream;
-        setIsScanning(true);
+        videoRef.current.play();
         
+        // Commencer le scan après que la vidéo soit prête
         videoRef.current.onloadedmetadata = () => {
-          startAutoScan();
+          startQRDetection();
         };
       }
     } catch (error) {
-      console.error('Error accessing camera:', error);
+      console.error('Erreur accès caméra:', error);
       toast({
         variant: "destructive",
         title: "Erreur caméra",
-        description: "Impossible d'accéder à la caméra. Veuillez utiliser l'importation de fichier."
+        description: "Impossible d'accéder à la caméra. Vérifiez les permissions."
       });
+      setIsScanning(false);
     }
   };
 
-  const startAutoScan = () => {
-    if (!videoRef.current) return;
-    
-    scanIntervalRef.current = setInterval(() => {
-      if (!videoRef.current || !isScanning) return;
-      
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      
-      canvas.width = videoRef.current.videoWidth;
-      canvas.height = videoRef.current.videoHeight;
-      ctx.drawImage(videoRef.current, 0, 0);
-      
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
-      
-      if (qrCode) {
-        console.log('QR Code détecté via caméra:', qrCode.data);
-        processQRCode(qrCode.data);
-      }
-    }, 1000);
+  const startQRDetection = () => {
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+    }
+
+    scanIntervalRef.current = window.setInterval(() => {
+      scanForQRCode();
+    }, 100);
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast({
-        variant: "destructive",
-        title: "Fichier invalide",
-        description: "Veuillez sélectionner une image contenant un QR code."
-      });
+  const scanForQRCode = () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    
+    if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const imageSrc = e.target?.result as string;
-      await processQRCodeFromImage(imageSrc);
-    };
-    reader.readAsDataURL(file);
-  };
+    const context = canvas.getContext('2d');
+    if (!context) return;
 
-  const processQRCodeFromImage = async (imageSrc: string) => {
-    try {
-      setLoading(true);
-      
-      const img = new Image();
-      img.onload = async () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          toast({
-            variant: "destructive",
-            title: "Erreur",
-            description: "Impossible de traiter l'image."
-          });
-          setLoading(false);
-          return;
-        }
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, imageData.width, imageData.height);
 
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
-        
-        if (qrCode) {
-          console.log('QR Code détecté dans l\'image:', qrCode.data);
-          await processQRCode(qrCode.data);
-        } else {
-          toast({
-            variant: "destructive",
-            title: "Aucun QR code détecté",
-            description: "Aucun code QR n'a été trouvé dans cette image."
-          });
-        }
-        setLoading(false);
-      };
-      
-      img.onerror = () => {
-        toast({
-          variant: "destructive",
-          title: "Erreur",
-          description: "Impossible de charger l'image."
-        });
-        setLoading(false);
-      };
-      
-      img.src = imageSrc;
-    } catch (error) {
-      console.error('Erreur lors du traitement de l\'image:', error);
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Impossible de traiter l'image."
-      });
-      setLoading(false);
+    if (code) {
+      console.log('QR Code détecté:', code.data);
+      handleQRCodeDetected(code.data);
     }
   };
 
-  const processQRCode = async (qrCodeValue: string) => {
+  const handleQRCodeDetected = async (qrCodeData: string) => {
+    if (loading) return; // Éviter les scans multiples
+    
     try {
       setLoading(true);
-      
-      let cleanCode = qrCodeValue.trim();
-      
-      if (cleanCode.includes('/qr/')) {
-        const parts = cleanCode.split('/qr/');
-        cleanCode = parts[parts.length - 1];
-      }
-      
-      console.log('Processing cleaned QR code:', cleanCode);
-      
-      const validation = await validateQRCode(cleanCode);
-      console.log('QR validation result:', validation);
-      
+      stopScanning();
+
+      console.log('🔄 Processing QR code:', qrCodeData);
+
+      // Valider le QR code
+      const validation = await validateQRCode(qrCodeData);
+      console.log('✅ QR code validation result:', validation);
+
       if (!validation.valid || !validation.userId) {
         toast({
           variant: "destructive",
-          title: "Code QR invalide",
-          description: "Ce code QR n'est pas valide ou a expiré."
+          title: "QR Code invalide",
+          description: "Ce QR code n'est pas valide ou a expiré."
         });
         return;
       }
-      
+
+      // Récupérer le profil du patient
       const profile = await getUserProfile(validation.userId);
-      console.log('Patient profile retrieved:', profile);
-      
+      console.log('✅ Patient profile retrieved:', profile);
+
       if (!profile) {
         toast({
           variant: "destructive",
@@ -198,7 +129,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
         });
         return;
       }
-      
+
       if (profile.access_status === 'restricted') {
         toast({
           variant: "destructive",
@@ -207,12 +138,12 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
         });
         return;
       }
-      
-      // Créer une session d'accès médecin
-      console.log('Creating doctor session...');
+
+      // Créer une session d'accès médecin de 30 minutes
+      console.log('🔄 Creating doctor session...');
       const session = await createDoctorSession(validation.userId, doctorId, validation.qrCodeId);
-      console.log('Doctor session created:', session);
-      
+      console.log('✅ Doctor session created:', session);
+
       const patientData = {
         profile: {
           ...profile,
@@ -221,127 +152,107 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
         qrCodeId: validation.qrCodeId,
         sessionId: session.id
       };
-      
-      console.log('Sending patient data to parent:', patientData);
-      
-      stopCamera();
+
+      console.log('✅ Sending patient data to parent:', patientData);
+
       onScanSuccess(patientData);
-      
+
       toast({
-        title: "Accès accordé",
-        description: `Session d'accès créée pour ${profile.name || profile.email} (30 minutes)`
+        title: "QR Code scanné avec succès",
+        description: `Accès accordé à ${profile.name || profile.email} pour 30 minutes`
       });
-      
-    } catch (error) {
-      console.error('Erreur lors du traitement du QR code:', error);
+
+    } catch (error: any) {
+      console.error('❌ Error processing QR code:', error);
       toast({
         variant: "destructive",
-        title: "Erreur de traitement",
-        description: `Impossible de traiter le code QR: ${error.message || 'Erreur inconnue'}`
+        title: "Erreur de scan",
+        description: `Impossible de traiter le QR code: ${error?.message || 'Erreur inconnue'}`
       });
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    return () => {
-      stopCamera();
-    };
-  }, []);
+  const stopScanning = () => {
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
+    }
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+
+    setIsScanning(false);
+    setLoading(false);
+  };
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <QrCode size={20} />
-            Scanner QR Code Patient
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {!isScanning ? (
-            <div className="space-y-4">
-              <Button 
-                onClick={startCamera}
-                className="w-full"
-                disabled={loading}
-              >
-                <Camera size={16} className="mr-2" />
-                Activer la caméra
-              </Button>
-              
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
+      {!isScanning ? (
+        <Button 
+          onClick={startScanning}
+          className="w-full flex items-center gap-2"
+          disabled={loading}
+        >
+          <Camera size={16} />
+          Scanner un QR Code
+        </Button>
+      ) : (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Scan size={16} />
+              Scanner en cours...
+            </CardTitle>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={stopScanning}
+              disabled={loading}
+            >
+              <X size={16} />
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="relative">
+              <video
+                ref={videoRef}
+                className="w-full h-64 bg-black rounded object-cover"
+                playsInline
+                muted
+              />
+              <canvas
+                ref={canvasRef}
+                className="hidden"
+              />
+              {loading && (
+                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded">
+                  <div className="text-white text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+                    <p>Traitement du QR code...</p>
+                  </div>
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    Ou
-                  </span>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-                <Button 
-                  onClick={() => fileInputRef.current?.click()}
-                  variant="outline"
-                  className="w-full"
-                  disabled={loading}
-                >
-                  <Upload size={16} className="mr-2" />
-                  Importer une image QR
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="relative">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  className="w-full h-64 bg-black rounded-lg"
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-48 h-48 border-2 border-white rounded-lg"></div>
-                </div>
-              </div>
-              
-              <Button 
-                onClick={stopCamera}
-                variant="outline"
-                disabled={loading}
-                className="w-full"
-              >
-                Arrêter la caméra
-              </Button>
-              
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-                <div className="flex items-start gap-2">
-                  <AlertCircle size={16} className="text-blue-600 mt-0.5" />
-                  <p className="text-sm text-blue-800 dark:text-blue-200">
-                    Positionnez le code QR dans le cadre. Le scan se fait automatiquement.
-                  </p>
-                </div>
+              )}
+              <div className="absolute inset-0 border-2 border-white rounded opacity-50 pointer-events-none">
+                <div className="absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 border-primary"></div>
+                <div className="absolute top-4 right-4 w-6 h-6 border-t-2 border-r-2 border-primary"></div>
+                <div className="absolute bottom-4 left-4 w-6 h-6 border-b-2 border-l-2 border-primary"></div>
+                <div className="absolute bottom-4 right-4 w-6 h-6 border-b-2 border-r-2 border-primary"></div>
               </div>
             </div>
-          )}
-          
-          {loading && (
-            <div className="text-center py-4">
-              <div className="animate-pulse">Traitement du code QR en cours...</div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            <p className="text-sm text-muted-foreground text-center mt-2">
+              Pointez la caméra vers le QR code du patient
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

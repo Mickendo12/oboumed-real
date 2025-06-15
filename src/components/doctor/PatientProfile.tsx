@@ -3,14 +3,17 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, User, FileText, Pill, Clock, AlertTriangle } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
+import { 
+  ArrowLeft, User, Pill, Clock, Heart, Phone, Mail, 
+  AlertTriangle, Timer, Weight, Ruler, Activity
+} from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { 
   getUserProfileWithBMI, 
   getMedicationsForUser, 
   getRemindersForUser,
   hasActiveSession,
-  logAccess,
   ProfileWithBMI, 
   Medication 
 } from '@/services/supabaseService';
@@ -20,86 +23,141 @@ interface PatientProfileProps {
   patientId: string;
   doctorId: string;
   onBack: () => void;
+  onSessionExpired?: () => void;
 }
 
-const PatientProfile: React.FC<PatientProfileProps> = ({ patientId, doctorId, onBack }) => {
+const PatientProfile: React.FC<PatientProfileProps> = ({ 
+  patientId, 
+  doctorId, 
+  onBack,
+  onSessionExpired 
+}) => {
   const [profile, setProfile] = useState<ProfileWithBMI | null>(null);
   const [medications, setMedications] = useState<Medication[]>([]);
   const [reminders, setReminders] = useState<ReminderDB[]>([]);
   const [loading, setLoading] = useState(true);
-  const [hasAccess, setHasAccess] = useState(false);
+  const [sessionValid, setSessionValid] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     loadPatientData();
+    
+    // Vérifier la validité de la session toutes les 30 secondes
+    const sessionCheck = setInterval(checkSessionValidity, 30000);
+    
+    return () => clearInterval(sessionCheck);
   }, [patientId, doctorId]);
+
+  const checkSessionValidity = async () => {
+    try {
+      const isValid = await hasActiveSession(doctorId, patientId);
+      
+      if (!isValid && sessionValid) {
+        setSessionValid(false);
+        toast({
+          variant: "destructive",
+          title: "Session expirée",
+          description: "Votre accès au dossier médical a expiré."
+        });
+        
+        // Appeler le callback d'expiration si fourni
+        if (onSessionExpired) {
+          onSessionExpired();
+        } else {
+          onBack();
+        }
+      }
+    } catch (error) {
+      console.error('Error checking session validity:', error);
+    }
+  };
 
   const loadPatientData = async () => {
     try {
       setLoading(true);
       
-      // Vérifier si le médecin a une session active pour ce patient
-      console.log('Checking access for doctor:', doctorId, 'patient:', patientId);
-      const accessGranted = await hasActiveSession(doctorId, patientId);
-      console.log('Access granted:', accessGranted);
+      // Vérifier d'abord que la session est valide
+      const isValid = await hasActiveSession(doctorId, patientId);
       
-      if (!accessGranted) {
-        setHasAccess(false);
+      if (!isValid) {
+        setSessionValid(false);
         toast({
           variant: "destructive",
-          title: "Accès expiré",
-          description: "Votre session d'accès à ce dossier a expiré."
+          title: "Session expirée",
+          description: "Votre accès au dossier médical a expiré."
         });
+        onBack();
         return;
       }
-      
-      setHasAccess(true);
-      
-      // Charger les données du patient
-      console.log('Loading patient data for:', patientId);
+
       const [profileData, medicationsData, remindersData] = await Promise.all([
         getUserProfileWithBMI(patientId),
         getMedicationsForUser(patientId),
         getRemindersForUser(patientId)
       ]);
 
-      console.log('Patient data loaded:', { profileData, medicationsData, remindersData });
+      if (!profileData) {
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Impossible de charger le profil du patient."
+        });
+        onBack();
+        return;
+      }
 
       setProfile(profileData);
       setMedications(medicationsData);
       setReminders(remindersData);
-
-      // Logger l'accès au dossier
-      await logAccess({
-        patient_id: patientId,
-        doctor_id: doctorId,
-        action: 'profile_accessed',
-        details: { 
-          sections_accessed: ['profile', 'medications', 'reminders'],
-          access_time: new Date().toISOString()
-        }
-      });
-
+      setSessionValid(true);
+      
     } catch (error) {
       console.error('Error loading patient data:', error);
       toast({
         variant: "destructive",
-        title: "Erreur",
+        title: "Erreur de chargement",
         description: "Impossible de charger les données du patient."
       });
+      onBack();
     } finally {
       setLoading(false);
     }
   };
 
-  const getBMICategory = (bmi?: number): { label: string; color: string } => {
-    if (!bmi) return { label: 'Non calculé', color: 'secondary' };
-    
-    if (bmi < 18.5) return { label: 'Insuffisance pondérale', color: 'blue' };
-    if (bmi < 25) return { label: 'Poids normal', color: 'green' };
-    if (bmi < 30) return { label: 'Surpoids', color: 'yellow' };
-    return { label: 'Obésité', color: 'red' };
+  const getBMIBadgeVariant = (bmi?: number) => {
+    if (!bmi) return 'secondary';
+    if (bmi < 18.5) return 'outline';
+    if (bmi < 25) return 'default';
+    if (bmi < 30) return 'secondary';
+    return 'destructive';
   };
+
+  const getBMICategoryColor = (category?: string) => {
+    switch (category) {
+      case 'Poids normal': return 'text-green-600';
+      case 'Insuffisance pondérale': return 'text-blue-600';
+      case 'Surpoids': return 'text-yellow-600';
+      case 'Obésité': return 'text-red-600';
+      default: return 'text-muted-foreground';
+    }
+  };
+
+  if (!sessionValid) {
+    return (
+      <Card>
+        <CardContent className="text-center py-8">
+          <Timer size={48} className="mx-auto mb-4 text-destructive" />
+          <h2 className="text-xl font-semibold mb-2">Session expirée</h2>
+          <p className="text-muted-foreground mb-4">
+            Votre accès au dossier médical a expiré après 30 minutes.
+          </p>
+          <Button onClick={onBack}>
+            Retour au tableau de bord
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (loading) {
     return (
@@ -109,248 +167,257 @@ const PatientProfile: React.FC<PatientProfileProps> = ({ patientId, doctorId, on
     );
   }
 
-  if (!hasAccess) {
-    return (
-      <Card className="max-w-md mx-auto">
-        <CardContent className="pt-6">
-          <div className="text-center space-y-4">
-            <AlertTriangle size={48} className="mx-auto text-amber-500" />
-            <div>
-              <h3 className="font-semibold text-lg">Accès non autorisé</h3>
-              <p className="text-muted-foreground">
-                Vous n'avez pas d'accès actif à ce dossier patient.
-              </p>
-            </div>
-            <Button onClick={onBack} className="w-full">
-              <ArrowLeft size={16} className="mr-2" />
-              Retour
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   if (!profile) {
     return (
-      <Card className="max-w-md mx-auto">
-        <CardContent className="pt-6">
-          <div className="text-center space-y-4">
-            <AlertTriangle size={48} className="mx-auto text-red-500" />
-            <div>
-              <h3 className="font-semibold text-lg">Patient introuvable</h3>
-              <p className="text-muted-foreground">
-                Impossible de trouver les informations de ce patient.
-              </p>
-            </div>
-            <Button onClick={onBack} className="w-full">
-              <ArrowLeft size={16} className="mr-2" />
-              Retour
-            </Button>
-          </div>
+      <Card>
+        <CardContent className="text-center py-8">
+          <AlertTriangle size={48} className="mx-auto mb-4 text-destructive" />
+          <h2 className="text-xl font-semibold mb-2">Patient non trouvé</h2>
+          <p className="text-muted-foreground">
+            Impossible de charger les informations du patient.
+          </p>
+          <Button onClick={onBack} className="mt-4">
+            <ArrowLeft size={16} className="mr-2" />
+            Retour
+          </Button>
         </CardContent>
       </Card>
     );
   }
-
-  const bmiInfo = getBMICategory(profile.bmi);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button onClick={onBack} variant="outline" size="sm">
+      <div className="flex items-center justify-between">
+        <Button variant="outline" onClick={onBack}>
           <ArrowLeft size={16} className="mr-2" />
-          Retour
+          Retour aux sessions
         </Button>
-        <h1 className="text-2xl font-bold">Dossier Patient</h1>
+        <Badge variant="default" className="flex items-center gap-2">
+          <Clock size={16} />
+          Session active (30 min)
+        </Badge>
       </div>
 
-      {/* Informations personnelles */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User size={20} />
-            Informations personnelles
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Nom</p>
-              <p className="font-medium">{profile.name || 'Non renseigné'}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Email</p>
-              <p className="font-medium">{profile.email}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Téléphone</p>
-              <p className="font-medium">{profile.phone_number || 'Non renseigné'}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Groupe sanguin</p>
-              <p className="font-medium">{profile.blood_type || 'Non renseigné'}</p>
-            </div>
-          </div>
-
-          {/* Mesures corporelles */}
-          {(profile.weight_kg || profile.height_cm) && (
-            <div className="pt-4 border-t">
-              <h4 className="font-medium mb-3">Mesures corporelles</h4>
-              <div className="grid md:grid-cols-3 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Poids</p>
-                  <p className="font-medium">{profile.weight_kg ? `${profile.weight_kg} kg` : 'Non renseigné'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Taille</p>
-                  <p className="font-medium">{profile.height_cm ? `${profile.height_cm} cm` : 'Non renseigné'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">IMC</p>
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">{profile.bmi ? profile.bmi.toString() : 'Non calculé'}</p>
-                    <Badge variant={bmiInfo.color as any}>{bmiInfo.label}</Badge>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Informations médicales */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText size={20} />
-            Informations médicales
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <p className="text-sm font-medium text-muted-foreground mb-2">Allergies</p>
-            <p className="text-sm">{profile.allergies || 'Aucune allergie connue'}</p>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-muted-foreground mb-2">Maladies chroniques</p>
-            <p className="text-sm">{profile.chronic_diseases || 'Aucune maladie chronique connue'}</p>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-muted-foreground mb-2">Traitements actuels</p>
-            <p className="text-sm">{profile.current_medications || 'Aucun traitement en cours'}</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Contact d'urgence */}
-      {(profile.emergency_contact_name || profile.emergency_contact_phone) && (
+      <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Contact d'urgence</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <User size={20} />
+              Informations personnelles
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-3 gap-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Nom</p>
-                <p className="font-medium">{profile.emergency_contact_name || 'Non renseigné'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Téléphone</p>
-                <p className="font-medium">{profile.emergency_contact_phone || 'Non renseigné'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Relation</p>
-                <p className="font-medium">{profile.emergency_contact_relationship || 'Non renseigné'}</p>
-              </div>
-            </div>
+          <CardContent>
+            <Table>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="font-medium">Nom</TableCell>
+                  <TableCell>{profile.name || 'Non renseigné'}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium flex items-center">
+                    <Mail className="mr-2" size={16} />
+                    Email
+                  </TableCell>
+                  <TableCell>{profile.email}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium flex items-center">
+                    <Phone className="mr-2" size={16} />
+                    Téléphone
+                  </TableCell>
+                  <TableCell>{profile.phone_number || 'Non renseigné'}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">Groupe sanguin</TableCell>
+                  <TableCell>
+                    {profile.blood_type ? (
+                      <Badge variant="outline">{profile.blood_type}</Badge>
+                    ) : (
+                      'Non renseigné'
+                    )}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
-      )}
 
-      {/* Médicaments */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity size={20} />
+              Données physiques
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="font-medium flex items-center">
+                    <Weight className="mr-2" size={16} />
+                    Poids
+                  </TableCell>
+                  <TableCell>
+                    {profile.weight_kg ? `${profile.weight_kg} kg` : 'Non renseigné'}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium flex items-center">
+                    <Ruler className="mr-2" size={16} />
+                    Taille
+                  </TableCell>
+                  <TableCell>
+                    {profile.height_cm ? `${profile.height_cm} cm` : 'Non renseigné'}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">IMC</TableCell>
+                  <TableCell>
+                    {profile.bmi ? (
+                      <div className="flex items-center gap-2">
+                        <Badge variant={getBMIBadgeVariant(profile.bmi)}>
+                          {profile.bmi}
+                        </Badge>
+                        <span className={`text-sm ${getBMICategoryColor(profile.bmi_category)}`}>
+                          {profile.bmi_category}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">Non calculable</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Pill size={20} />
-            Médicaments ({medications.length})
+            <Heart size={20} />
+            Informations médicales d'urgence
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          {medications.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">
-              Aucun médicament enregistré
+        <CardContent className="space-y-4">
+          <div>
+            <h4 className="font-medium mb-2 text-red-600 flex items-center gap-2">
+              <AlertTriangle size={16} />
+              Allergies
+            </h4>
+            <p className="text-sm bg-red-50 p-3 rounded border border-red-200 font-medium">
+              {profile.allergies || 'Aucune allergie connue'}
             </p>
-          ) : (
-            <div className="space-y-3">
-              {medications.map((medication) => (
-                <div key={medication.id} className="border rounded-lg p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-medium">{medication.name}</h4>
-                      {medication.dosage && (
-                        <p className="text-sm text-muted-foreground">Dosage: {medication.dosage}</p>
-                      )}
-                      {medication.frequency && (
-                        <p className="text-sm text-muted-foreground">Fréquence: {medication.frequency}</p>
-                      )}
-                      {medication.doctor_prescribed && (
-                        <p className="text-sm text-muted-foreground">Prescrit par: {medication.doctor_prescribed}</p>
-                      )}
-                    </div>
-                  </div>
-                  {medication.comments && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Commentaires: {medication.comments}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+          </div>
+          <div>
+            <h4 className="font-medium mb-2">Maladies chroniques</h4>
+            <p className="text-sm bg-gray-50 p-3 rounded border">
+              {profile.chronic_diseases || 'Aucune maladie chronique'}
+            </p>
+          </div>
+          <div>
+            <h4 className="font-medium mb-2">Traitements actuels</h4>
+            <p className="text-sm bg-blue-50 p-3 rounded border border-blue-200">
+              {profile.current_medications || 'Aucun traitement en cours'}
+            </p>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Rappels */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock size={20} />
-            Rappels de médicaments ({reminders.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {reminders.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">
-              Aucun rappel configuré
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {reminders.map((reminder) => (
-                <div key={reminder.id} className="border rounded-lg p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-medium">{reminder.medication_name}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Heure: {reminder.time}
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Pill size={20} />
+              Médicaments ({medications.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {medications.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Aucun médicament enregistré</p>
+            ) : (
+              <div className="space-y-3">
+                {medications.map((med) => (
+                  <div key={med.id} className="border rounded p-3">
+                    <h5 className="font-medium">{med.name}</h5>
+                    <p className="text-sm text-muted-foreground">{med.dosage}</p>
+                    <p className="text-xs">{med.frequency}</p>
+                    {med.posology && (
+                      <p className="text-xs mt-1">
+                        <strong>Posologie:</strong> {med.posology}
                       </p>
-                      <p className="text-sm text-muted-foreground">
-                        Fréquence: {reminder.frequency || 'Non définie'}
-                      </p>
-                      {reminder.dosage && (
-                        <p className="text-sm text-muted-foreground">
-                          Dosage: {reminder.dosage}
-                        </p>
-                      )}
-                    </div>
-                    <Badge variant={reminder.is_active ? "default" : "secondary"}>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock size={20} />
+              Rappels de prise ({reminders.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {reminders.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Aucun rappel configuré</p>
+            ) : (
+              <div className="space-y-3">
+                {reminders.map((reminder) => (
+                  <div key={reminder.id} className="border rounded p-3">
+                    <h5 className="font-medium">{reminder.medication_name}</h5>
+                    <p className="text-sm text-muted-foreground">
+                      {reminder.time} - {reminder.frequency}
+                    </p>
+                    <p className="text-xs">Dosage: {reminder.dosage}</p>
+                    <Badge variant={reminder.is_active ? "default" : "secondary"} className="mt-1">
                       {reminder.is_active ? "Actif" : "Inactif"}
                     </Badge>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Contact d'urgence</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableBody>
+              <TableRow>
+                <TableCell className="font-medium">Nom</TableCell>
+                <TableCell>{profile.emergency_contact_name || 'Non renseigné'}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Téléphone</TableCell>
+                <TableCell>
+                  {profile.emergency_contact_phone ? (
+                    <a 
+                      href={`tel:${profile.emergency_contact_phone}`}
+                      className="text-blue-600 hover:underline flex items-center gap-2"
+                    >
+                      <Phone size={16} />
+                      {profile.emergency_contact_phone}
+                    </a>
+                  ) : (
+                    'Non renseigné'
+                  )}
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Relation</TableCell>
+                <TableCell>{profile.emergency_contact_relationship || 'Non renseigné'}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>

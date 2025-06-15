@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Clock, User, Stethoscope } from 'lucide-react';
+import { Clock, User, Stethoscope, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import AccessKeyVerification from './AccessKeyVerification';
 import PatientProfile from './PatientProfile';
@@ -22,6 +22,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ userId }) => {
   const [activeSessions, setActiveSessions] = useState<DoctorAccessSession[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sessionCountdowns, setSessionCountdowns] = useState<{ [sessionId: string]: string }>({});
   const { toast } = useToast();
 
   useEffect(() => {
@@ -30,11 +31,61 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ userId }) => {
     return () => clearInterval(interval);
   }, []);
 
+  // Compte à rebours en temps réel
+  useEffect(() => {
+    const countdownInterval = setInterval(() => {
+      const now = new Date();
+      const newCountdowns: { [sessionId: string]: string } = {};
+      let hasExpiredSessions = false;
+
+      activeSessions.forEach((session) => {
+        const expiry = new Date(session.expires_at);
+        const diff = expiry.getTime() - now.getTime();
+        
+        if (diff <= 0) {
+          newCountdowns[session.id] = 'Expiré';
+          hasExpiredSessions = true;
+          
+          // Si la session sélectionnée est expirée, on retourne à la liste
+          if (selectedPatientId === session.patient_id) {
+            setSelectedPatientId(null);
+            toast({
+              variant: "destructive",
+              title: "Session expirée",
+              description: "Votre accès au dossier médical a expiré. Veuillez rescanner ou réentrer la clé d'accès."
+            });
+          }
+        } else {
+          const minutes = Math.floor(diff / (1000 * 60));
+          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+          newCountdowns[session.id] = `${minutes}m ${seconds}s`;
+        }
+      });
+
+      setSessionCountdowns(newCountdowns);
+
+      // Recharger les sessions si certaines ont expiré
+      if (hasExpiredSessions) {
+        loadActiveSessions();
+      }
+    }, 1000);
+
+    return () => clearInterval(countdownInterval);
+  }, [activeSessions, selectedPatientId, toast]);
+
   const loadActiveSessions = async () => {
     try {
       const sessions = await getActiveDoctorSessions(userId);
       console.log('Loaded active sessions:', sessions);
-      setActiveSessions(sessions);
+      
+      // Filtrer les sessions qui ne sont pas encore expirées côté client
+      const now = new Date();
+      const validSessions = sessions.filter(session => {
+        const expiry = new Date(session.expires_at);
+        return expiry > now;
+      });
+      
+      setActiveSessions(validSessions);
     } catch (error) {
       console.error('Error loading active sessions:', error);
       toast({
@@ -51,7 +102,6 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ userId }) => {
     try {
       console.log('Received patient data in dashboard:', patientData);
       
-      // Validation stricte des données
       if (!patientData?.profile?.user_id) {
         console.error('Invalid patient data - missing user_id:', patientData);
         toast({
@@ -73,6 +123,11 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ userId }) => {
       // Sélectionner le patient
       setSelectedPatientId(patientUserId);
       
+      toast({
+        title: "Accès accordé",
+        description: `Session d'accès de 30 minutes démarrée pour ${profile.name || profile.email}`
+      });
+      
     } catch (error) {
       console.error('Error processing access grant:', error);
       toast({
@@ -83,17 +138,31 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ userId }) => {
     }
   };
 
-  const getTimeRemaining = (expiresAt: string): string => {
-    const now = new Date();
-    const expiry = new Date(expiresAt);
-    const diff = expiry.getTime() - now.getTime();
-    
-    if (diff <= 0) return 'Expiré';
-    
-    const minutes = Math.floor(diff / (1000 * 60));
-    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-    
-    return `${minutes}m ${seconds}s`;
+  const handleSessionExpiry = (sessionId: string) => {
+    const expiredSession = activeSessions.find(s => s.id === sessionId);
+    if (expiredSession && selectedPatientId === expiredSession.patient_id) {
+      setSelectedPatientId(null);
+      toast({
+        variant: "destructive",
+        title: "Session expirée",
+        description: "Votre accès au dossier médical a expiré. Veuillez rescanner ou réentrer la clé d'accès."
+      });
+    }
+    loadActiveSessions();
+  };
+
+  const getSessionStatus = (session: DoctorAccessSession) => {
+    const countdown = sessionCountdowns[session.id];
+    const isExpired = countdown === 'Expiré';
+    const isExpiring = countdown && countdown.includes('m') && parseInt(countdown) < 5;
+
+    if (isExpired) {
+      return { variant: 'destructive' as const, text: 'Expiré' };
+    } else if (isExpiring) {
+      return { variant: 'secondary' as const, text: countdown };
+    } else {
+      return { variant: 'default' as const, text: countdown || 'Chargement...' };
+    }
   };
 
   if (loading) {
@@ -133,40 +202,50 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ userId }) => {
 
             <Card className="dark-container">
               <CardHeader>
-                <CardTitle>Sessions d'accès actives</CardTitle>
+                <CardTitle>Sessions d'accès actives (30 minutes)</CardTitle>
               </CardHeader>
               <CardContent>
                 {activeSessions.length === 0 ? (
                   <div className="text-center py-8">
                     <Stethoscope size={48} className="mx-auto mb-4 text-muted-foreground" />
                     <p className="text-muted-foreground">
-                      Aucune session active. Utilisez la clé d'accès pour accéder à un dossier médical.
+                      Aucune session active. Utilisez la clé d'accès ou scannez un QR code pour accéder à un dossier médical.
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {activeSessions.map((session) => (
-                      <div key={session.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <p className="font-medium">Patient ID: {session.patient_id}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Accès accordé: {new Date(session.access_granted_at).toLocaleString('fr-FR')}
-                          </p>
+                    {activeSessions.map((session) => {
+                      const status = getSessionStatus(session);
+                      const isExpired = status.text === 'Expiré';
+                      
+                      return (
+                        <div key={session.id} className={`flex items-center justify-between p-4 border rounded-lg ${isExpired ? 'opacity-60 border-destructive' : ''}`}>
+                          <div>
+                            <p className="font-medium">Patient ID: {session.patient_id}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Accès accordé: {new Date(session.access_granted_at).toLocaleString('fr-FR')}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Expire à: {new Date(session.expires_at).toLocaleString('fr-FR')}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <Badge variant={status.variant} className="flex items-center gap-1">
+                              <Clock size={14} />
+                              {status.text}
+                              {isExpired && <AlertTriangle size={14} />}
+                            </Badge>
+                            <Button 
+                              size="sm"
+                              disabled={isExpired}
+                              onClick={() => setSelectedPatientId(session.patient_id)}
+                            >
+                              {isExpired ? 'Session expirée' : 'Voir le dossier'}
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <Badge variant="secondary">
-                            <Clock size={14} className="mr-1" />
-                            {getTimeRemaining(session.expires_at)}
-                          </Badge>
-                          <Button 
-                            size="sm"
-                            onClick={() => setSelectedPatientId(session.patient_id)}
-                          >
-                            Voir le dossier
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
@@ -180,6 +259,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ userId }) => {
               patientId={selectedPatientId} 
               doctorId={userId}
               onBack={() => setSelectedPatientId(null)}
+              onSessionExpired={() => handleSessionExpiry(activeSessions.find(s => s.patient_id === selectedPatientId)?.id || '')}
             />
           </TabsContent>
         )}
