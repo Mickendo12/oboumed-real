@@ -31,5 +31,6 @@ export const decodeQRKey = (encodedKey: string): string | null => {
 
 export const generateSecureQRUrl = (qrCode: string): string => {
   const encodedKey = encodeQRKey(qrCode);
-  return `${window.location.origin}/qr/${encodedKey}`;
+  // Utiliser un domaine autonome au lieu de window.location.origin
+  return `https://medical-access.micaprod-corporate.com/qr/${encodedKey}`;
 };
