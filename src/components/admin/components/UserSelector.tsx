@@ -1,14 +1,16 @@
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Search } from 'lucide-react';
 import { Profile } from '@/services/supabaseService';
 
 interface UserSelectorProps {
   profiles: Profile[];
-  selectedUserId: string;
+  selectedUserId: string | null;
   onUserSelect: (userId: string) => void;
-  selectedProfile?: Profile;
+  selectedProfile: Profile | null;
 }
 
 const UserSelector: React.FC<UserSelectorProps> = ({
@@ -17,46 +19,79 @@ const UserSelector: React.FC<UserSelectorProps> = ({
   onUserSelect,
   selectedProfile
 }) => {
+  const [searchName, setSearchName] = useState('');
+  const [searchEmail, setSearchEmail] = useState('');
+
+  const filteredProfiles = useMemo(() => {
+    return profiles.filter(profile => {
+      const nameMatch = !searchName || 
+        (profile.name && profile.name.toLowerCase().includes(searchName.toLowerCase()));
+      const emailMatch = !searchEmail || 
+        profile.email.toLowerCase().includes(searchEmail.toLowerCase());
+      
+      return nameMatch && emailMatch;
+    });
+  }, [profiles, searchName, searchEmail]);
+
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
-        <label className="text-sm font-medium">Sélectionner un utilisateur</label>
-        <Select value={selectedUserId} onValueChange={onUserSelect}>
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Filtrer par nom..."
+            value={searchName}
+            onChange={(e) => setSearchName(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Filtrer par email..."
+            value={searchEmail}
+            onChange={(e) => setSearchEmail(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label htmlFor="user-select" className="block text-sm font-medium mb-2">
+          Sélectionner un utilisateur
+        </label>
+        <Select value={selectedUserId || ""} onValueChange={onUserSelect}>
           <SelectTrigger>
-            <SelectValue placeholder="Choisir un utilisateur" />
+            <SelectValue placeholder="Choisir un utilisateur..." />
           </SelectTrigger>
           <SelectContent>
-            {profiles.map((profile) => (
+            {filteredProfiles.map((profile) => (
               <SelectItem key={profile.user_id} value={profile.user_id}>
-                <div className="flex items-center gap-2">
-                  <span>{profile.name || profile.email}</span>
-                  <Badge variant={profile.role === 'admin' ? 'destructive' : 
-                               profile.role === 'doctor' ? 'default' : 'secondary'}>
-                    {profile.role}
-                  </Badge>
+                <div className="flex items-center gap-2 w-full">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate">
+                      {profile.name || 'Nom non renseigné'}
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {profile.email}
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    <Badge variant="outline" className="text-xs">
+                      {profile.role}
+                    </Badge>
+                  </div>
                 </div>
               </SelectItem>
             ))}
+            {filteredProfiles.length === 0 && profiles.length > 0 && (
+              <div className="p-2 text-sm text-muted-foreground text-center">
+                Aucun utilisateur trouvé avec ces critères
+              </div>
+            )}
           </SelectContent>
         </Select>
       </div>
-
-      {selectedProfile && (
-        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-          <h4 className="font-medium mb-2">Utilisateur sélectionné</h4>
-          <div className="space-y-1">
-            <p className="text-sm"><strong>Nom:</strong> {selectedProfile.name || 'Non renseigné'}</p>
-            <p className="text-sm"><strong>Email:</strong> {selectedProfile.email}</p>
-            <p className="text-sm"><strong>Rôle:</strong> {selectedProfile.role}</p>
-            <p className="text-sm">
-              <strong>Statut:</strong> 
-              <Badge variant={selectedProfile.access_status === 'active' ? 'default' : 'destructive'} className="ml-1">
-                {selectedProfile.access_status}
-              </Badge>
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { QrCode, Key, Shield, UserX, UserCheck } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { QrCode, Key, Shield, UserX, UserCheck, Search } from 'lucide-react';
 import { Profile } from '@/services/supabaseService';
 
 interface UserListProps {
@@ -21,6 +22,20 @@ const UserList: React.FC<UserListProps> = ({
   onGenerateQRAndKey,
   onGrantDoctorAccess
 }) => {
+  const [searchName, setSearchName] = useState('');
+  const [searchEmail, setSearchEmail] = useState('');
+
+  const filteredProfiles = useMemo(() => {
+    return profiles.filter(profile => {
+      const nameMatch = !searchName || 
+        (profile.name && profile.name.toLowerCase().includes(searchName.toLowerCase()));
+      const emailMatch = !searchEmail || 
+        profile.email.toLowerCase().includes(searchEmail.toLowerCase());
+      
+      return nameMatch && emailMatch;
+    });
+  }, [profiles, searchName, searchEmail]);
+
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
       case 'admin': return 'destructive';
@@ -42,10 +57,30 @@ const UserList: React.FC<UserListProps> = ({
     <Card>
       <CardHeader>
         <CardTitle>Gestion des utilisateurs</CardTitle>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher par nom..."
+              value={searchName}
+              onChange={(e) => setSearchName(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="relative flex-1">
+            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher par email..."
+              value={searchEmail}
+              onChange={(e) => setSearchEmail(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {profiles.map((profile) => (
+          {filteredProfiles.map((profile) => (
             <div key={profile.id} className="flex items-center justify-between p-4 border rounded-lg">
               <div className="flex-1 space-y-2">
                 <div className="flex items-center gap-3">
@@ -116,6 +151,12 @@ const UserList: React.FC<UserListProps> = ({
               </div>
             </div>
           ))}
+          
+          {filteredProfiles.length === 0 && profiles.length > 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              Aucun utilisateur trouvé avec ces critères de recherche
+            </div>
+          )}
           
           {profiles.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
