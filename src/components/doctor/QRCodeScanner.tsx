@@ -2,10 +2,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Camera, X, Scan } from 'lucide-react';
+import { Camera, X, Scan, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { validateQRCode, getUserProfile, createDoctorSession } from '@/services/supabaseService';
 import jsQR from 'jsqr';
+import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 
 interface QRCodeScannerProps {
   onScanSuccess: (patientData: any) => void;
@@ -15,6 +16,7 @@ interface QRCodeScannerProps {
 const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }) => {
   const [isScanning, setIsScanning] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [useWebCamera, setUseWebCamera] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -27,7 +29,89 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
     };
   }, []);
 
-  const startScanning = async () => {
+  const takePictureWithCapacitor = async () => {
+    try {
+      setLoading(true);
+      
+      const image = await CapacitorCamera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Camera,
+        saveToGallery: false
+      });
+
+      if (image.dataUrl) {
+        await processImageForQR(image.dataUrl);
+      }
+    } catch (error: any) {
+      console.error('Erreur Capacitor Camera:', error);
+      
+      // Fallback vers la caméra web si Capacitor échoue
+      if (error.message?.includes('not available') || error.message?.includes('not implemented')) {
+        toast({
+          title: "Utilisation de la caméra web",
+          description: "Passage à la caméra web..."
+        });
+        setUseWebCamera(true);
+        startWebCameraScanning();
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Erreur caméra",
+          description: "Impossible d'accéder à la caméra. Vérifiez les permissions."
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const processImageForQR = async (imageDataUrl: string) => {
+    try {
+      setLoading(true);
+      
+      // Créer un canvas pour traiter l'image
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        if (!ctx) return;
+        
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        
+        if (code) {
+          console.log('QR Code détecté:', code.data);
+          handleQRCodeDetected(code.data);
+        } else {
+          toast({
+            variant: "destructive",
+            title: "QR Code non détecté",
+            description: "Aucun QR code trouvé dans l'image. Essayez à nouveau."
+          });
+          setLoading(false);
+        }
+      };
+      
+      img.src = imageDataUrl;
+    } catch (error) {
+      console.error('Erreur traitement image:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur de traitement",
+        description: "Impossible de traiter l'image."
+      });
+      setLoading(false);
+    }
+  };
+
+  const startWebCameraScanning = async () => {
     try {
       setIsScanning(true);
       
@@ -45,19 +129,19 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
         videoRef.current.srcObject = stream;
         videoRef.current.play();
         
-        // Commencer le scan après que la vidéo soit prête
         videoRef.current.onloadedmetadata = () => {
           startQRDetection();
         };
       }
     } catch (error) {
-      console.error('Erreur accès caméra:', error);
+      console.error('Erreur accès caméra web:', error);
       toast({
         variant: "destructive",
-        title: "Erreur caméra",
-        description: "Impossible d'accéder à la caméra. Vérifiez les permissions."
+        title: "Erreur caméra web",
+        description: "Impossible d'accéder à la caméra web. Vérifiez les permissions."
       });
       setIsScanning(false);
+      setUseWebCamera(false);
     }
   };
 
@@ -96,7 +180,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
   };
 
   const handleQRCodeDetected = async (qrCodeData: string) => {
-    if (loading) return; // Éviter les scans multiples
+    if (loading) return;
     
     try {
       setLoading(true);
@@ -104,7 +188,6 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
 
       console.log('🔄 Processing QR code:', qrCodeData);
 
-      // Valider le QR code
       const validation = await validateQRCode(qrCodeData);
       console.log('✅ QR code validation result:', validation);
 
@@ -117,7 +200,6 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
         return;
       }
 
-      // Récupérer le profil du patient
       const profile = await getUserProfile(validation.userId);
       console.log('✅ Patient profile retrieved:', profile);
 
@@ -139,7 +221,6 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
         return;
       }
 
-      // Créer une session d'accès médecin de 30 minutes
       console.log('🔄 Creating doctor session...');
       const session = await createDoctorSession(validation.userId, doctorId, validation.qrCodeId);
       console.log('✅ Doctor session created:', session);
@@ -190,20 +271,45 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
     }
 
     setIsScanning(false);
+    setUseWebCamera(false);
     setLoading(false);
   };
 
   return (
     <div className="space-y-4">
-      {!isScanning ? (
-        <Button 
-          onClick={startScanning}
-          className="w-full flex items-center gap-2"
-          disabled={loading}
-        >
-          <Camera size={16} />
-          Scanner un QR Code
-        </Button>
+      {!isScanning && !loading ? (
+        <div className="space-y-3">
+          <Button 
+            onClick={takePictureWithCapacitor}
+            className="w-full flex items-center gap-2"
+            disabled={loading}
+          >
+            <Camera size={16} />
+            Scanner avec la caméra
+          </Button>
+          
+          <Button 
+            variant="outline"
+            onClick={() => {
+              setUseWebCamera(true);
+              startWebCameraScanning();
+            }}
+            className="w-full flex items-center gap-2"
+            disabled={loading}
+          >
+            <Scan size={16} />
+            Utiliser la caméra web
+          </Button>
+        </div>
+      ) : loading && !isScanning ? (
+        <Card>
+          <CardContent className="flex items-center justify-center p-6">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+              <p className="text-sm">Traitement de l'image...</p>
+            </div>
+          </CardContent>
+        </Card>
       ) : (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -248,7 +354,10 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
               </div>
             </div>
             <p className="text-sm text-muted-foreground text-center mt-2">
-              Pointez la caméra vers le QR code du patient
+              {useWebCamera ? 
+                "Pointez la caméra vers le QR code du patient" : 
+                "Mode caméra web - Pointez vers le QR code"
+              }
             </p>
           </CardContent>
         </Card>
