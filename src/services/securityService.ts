@@ -99,7 +99,7 @@ class SecurityService {
         doctorId,
         patientId: userId,
         qrCodeId
-      });
+      }, userId);
 
       return session.id;
     } catch (error) {
@@ -110,6 +110,9 @@ class SecurityService {
 
   public async revokeSession(sessionId: string): Promise<void> {
     try {
+      // Récupérer les infos de la session avant de la révoquer
+      const session = this.activeSessions.get(sessionId);
+      
       await supabase
         .from('doctor_access_sessions')
         .update({ is_active: false })
@@ -117,7 +120,9 @@ class SecurityService {
 
       this.activeSessions.delete(sessionId);
       
-      await this.logSecurityEvent('session_revoked', { sessionId });
+      // Logger avec le patient_id si disponible
+      const patientId = session?.userId || 'unknown';
+      await this.logSecurityEvent('session_revoked', { sessionId }, patientId);
     } catch (error) {
       console.error('Erreur révocation session:', error);
     }
@@ -172,12 +177,13 @@ class SecurityService {
     }
   }
 
-  private async logSecurityEvent(event: string, details: any): Promise<void> {
+  private async logSecurityEvent(event: string, details: any, patientId: string = 'system'): Promise<void> {
     try {
       await supabase
         .from('access_logs')
         .insert({
           action: `security_${event}`,
+          patient_id: patientId,
           details: {
             event,
             timestamp: new Date().toISOString(),
