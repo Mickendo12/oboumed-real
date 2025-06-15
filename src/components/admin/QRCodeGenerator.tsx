@@ -130,10 +130,12 @@ const QRCodeGenerator: React.FC = () => {
         </CardContent>
       </Card>
 
-      {activeQrCode && (
+      {activeQrCode && selectedProfile && (
         <div className="grid md:grid-cols-2 gap-6">
           <QRCodeCard 
             qrCode={activeQrCode}
+            userName={selectedProfile.name || ''}
+            userEmail={selectedProfile.email}
             onCopy={copyToClipboard}
           />
           <AccessKeyCard 
