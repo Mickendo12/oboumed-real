@@ -45,10 +45,6 @@ const SecureQRRedirect: React.FC = () => {
               </div>
             </div>
           </div>
-          
-          <div className="text-center text-sm text-muted-foreground">
-            <p>Code QR: <span className="font-mono">{qrCode}</span></p>
-          </div>
         </CardContent>
       </Card>
     </div>
