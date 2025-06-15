@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -131,10 +132,12 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
   if (activeView === 'admin' && userRole === 'admin') {
     return (
       <div>
-        <div className="mb-6">
+        <div className="mb-3 xs:mb-4 sm:mb-6">
           <Button 
             variant="ghost" 
+            size="sm"
             onClick={() => setActiveView('dashboard')}
+            className="text-[10px] xs:text-xs sm:text-sm"
           >
             ← Retour au tableau de bord
           </Button>
@@ -148,10 +151,12 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
   if (activeView === 'doctor' && (userRole === 'doctor' || userRole === 'admin')) {
     return (
       <div>
-        <div className="mb-6">
+        <div className="mb-3 xs:mb-4 sm:mb-6">
           <Button 
             variant="ghost" 
+            size="sm"
             onClick={() => setActiveView('dashboard')}
+            className="text-[10px] xs:text-xs sm:text-sm"
           >
             ← Retour au tableau de bord
           </Button>
@@ -162,13 +167,15 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
   }
   
   return (
-    <div className="container py-6 space-y-6">
+    <div className="container py-2 xs:py-3 sm:py-4 lg:py-6 space-y-2 xs:space-y-3 sm:space-y-4 lg:space-y-6">
       {isCreatingPrescription ? (
         <div>
-          <div className="mb-6">
+          <div className="mb-3 xs:mb-4 sm:mb-6">
             <Button 
               variant="ghost" 
+              size="sm"
               onClick={() => setIsCreatingPrescription(false)}
+              className="text-[10px] xs:text-xs sm:text-sm"
             >
               ← Retour au tableau de bord
             </Button>
@@ -183,10 +190,12 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
         </div>
       ) : isCreatingReminder ? (
         <div>
-          <div className="mb-6">
+          <div className="mb-3 xs:mb-4 sm:mb-6">
             <Button 
               variant="ghost" 
+              size="sm"
               onClick={() => setIsCreatingReminder(false)}
+              className="text-[10px] xs:text-xs sm:text-sm"
             >
               ← Retour au tableau de bord
             </Button>
@@ -200,23 +209,28 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
         </div>
       ) : (
         <>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">Bonjour, {userName}</h1>
-              <p className="text-muted-foreground">Bienvenue sur votre tableau de bord ObouMed</p>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 xs:gap-3 sm:gap-4">
+            <div className="w-full sm:w-auto">
+              <h1 className="text-sm xs:text-base sm:text-lg lg:text-xl xl:text-2xl font-bold">Bonjour, {userName}</h1>
+              <p className="text-[10px] xs:text-xs sm:text-sm lg:text-base text-muted-foreground">Bienvenue sur votre tableau de bord ObouMed</p>
               {!hasActiveSubscription && (
-                <div className="mt-2 p-2 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-md">
-                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                <div className="mt-1 xs:mt-2 p-1.5 xs:p-2 sm:p-3 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded">
+                  <p className="text-[9px] xs:text-[10px] sm:text-xs lg:text-sm text-yellow-800 dark:text-yellow-200">
                     ⚠️ Accès restreint - Veuillez renouveler votre abonnement
                   </p>
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1 xs:gap-2 sm:gap-4 w-full sm:w-auto justify-end">
               {hasActiveSubscription && (
-                <Button onClick={() => setIsCreatingPrescription(true)}>
-                  <Plus size={18} className="mr-2" />
-                  Nouvelle ordonnance
+                <Button 
+                  onClick={() => setIsCreatingPrescription(true)}
+                  size="sm"
+                  className="text-[9px] xs:text-[10px] sm:text-xs lg:text-sm px-2 xs:px-3 sm:px-4 py-1 xs:py-1.5 sm:py-2"
+                >
+                  <Plus size={10} className="mr-1 xs:mr-1.5 sm:mr-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden xs:inline">Nouvelle ordonnance</span>
+                  <span className="xs:hidden">Nouvelle</span>
                 </Button>
               )}
             </div>
@@ -225,37 +239,39 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
           {/* Boutons de rôles spéciaux */}
           {(userRole === 'admin' || userRole === 'doctor') && (
             <Card className="border-2 border-blue-200 dark:border-blue-800">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg text-blue-900 dark:text-blue-100 flex items-center gap-2">
-                  <Shield size={20} />
+              <CardHeader className="pb-2 xs:pb-3 sm:pb-4">
+                <CardTitle className="text-sm xs:text-base sm:text-lg lg:text-xl text-blue-900 dark:text-blue-100 flex items-center gap-1 xs:gap-1.5 sm:gap-2">
+                  <Shield size={14} className="xs:w-4 xs:h-4 sm:w-5 sm:h-5" />
                   Accès privilégiés
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-[10px] xs:text-xs sm:text-sm">
                   Interfaces spécialisées pour votre rôle
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex gap-4">
+                <div className="flex flex-col xs:flex-row gap-2 xs:gap-3 sm:gap-4">
                   {userRole === 'admin' && (
                     <Button 
-                      size="lg" 
+                      size="sm"
                       variant="default"
-                      className="bg-red-600 hover:bg-red-700 text-white"
+                      className="bg-red-600 hover:bg-red-700 text-white text-[9px] xs:text-[10px] sm:text-xs lg:text-sm px-2 xs:px-3 sm:px-4 py-1.5 xs:py-2 sm:py-2.5"
                       onClick={() => setActiveView('admin')}
                     >
-                      <Shield size={20} className="mr-2" />
-                      Interface Administration
+                      <Shield size={12} className="mr-1 xs:mr-1.5 sm:mr-2 xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4" />
+                      <span className="hidden xs:inline">Interface Administration</span>
+                      <span className="xs:hidden">Admin</span>
                     </Button>
                   )}
                   {(userRole === 'doctor' || userRole === 'admin') && (
                     <Button 
-                      size="lg" 
+                      size="sm"
                       variant="default"
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      className="bg-blue-600 hover:bg-blue-700 text-white text-[9px] xs:text-[10px] sm:text-xs lg:text-sm px-2 xs:px-3 sm:px-4 py-1.5 xs:py-2 sm:py-2.5"
                       onClick={() => setActiveView('doctor')}
                     >
-                      <Stethoscope size={20} className="mr-2" />
-                      Interface Médecin
+                      <Stethoscope size={12} className="mr-1 xs:mr-1.5 sm:mr-2 xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4" />
+                      <span className="hidden xs:inline">Interface Médecin</span>
+                      <span className="xs:hidden">Médecin</span>
                     </Button>
                   )}
                 </div>
@@ -263,42 +279,58 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
             </Card>
           )}
           
-          <Tabs defaultValue="prescriptions">
-            <TabsList>
-              <TabsTrigger value="prescriptions">
-                <FileText size={16} className="mr-2" />
-                Ordonnances
+          <Tabs defaultValue="prescriptions" className="w-full">
+            <TabsList className="grid w-full grid-cols-4 h-auto p-0.5 xs:p-1 gap-0.5 xs:gap-1">
+              <TabsTrigger 
+                value="prescriptions" 
+                className="text-[8px] xs:text-[9px] sm:text-[10px] lg:text-xs py-1.5 xs:py-2 sm:py-2.5 px-1 xs:px-1.5 sm:px-2 flex flex-col xs:flex-row items-center gap-0.5 xs:gap-1 sm:gap-1.5"
+              >
+                <FileText size={10} className="xs:w-3 xs:h-3 sm:w-3.5 sm:h-3.5 lg:w-4 lg:h-4" />
+                <span className="hidden xxs:inline">Ordonnances</span>
+                <span className="xxs:hidden">Ord.</span>
               </TabsTrigger>
-              <TabsTrigger value="medications">
-                <Pill size={16} className="mr-2" />
-                Médicaments
+              <TabsTrigger 
+                value="medications" 
+                className="text-[8px] xs:text-[9px] sm:text-[10px] lg:text-xs py-1.5 xs:py-2 sm:py-2.5 px-1 xs:px-1.5 sm:px-2 flex flex-col xs:flex-row items-center gap-0.5 xs:gap-1 sm:gap-1.5"
+              >
+                <Pill size={10} className="xs:w-3 xs:h-3 sm:w-3.5 sm:h-3.5 lg:w-4 lg:h-4" />
+                <span className="hidden xxs:inline">Médicaments</span>
+                <span className="xxs:hidden">Méd.</span>
               </TabsTrigger>
-              <TabsTrigger value="reminders">
-                <Bell size={16} className="mr-2" />
-                Rappels
+              <TabsTrigger 
+                value="reminders" 
+                className="text-[8px] xs:text-[9px] sm:text-[10px] lg:text-xs py-1.5 xs:py-2 sm:py-2.5 px-1 xs:px-1.5 sm:px-2 flex flex-col xs:flex-row items-center gap-0.5 xs:gap-1 sm:gap-1.5"
+              >
+                <Bell size={10} className="xs:w-3 xs:h-3 sm:w-3.5 sm:h-3.5 lg:w-4 lg:h-4" />
+                <span className="hidden xxs:inline">Rappels</span>
+                <span className="xxs:hidden">Rapp.</span>
               </TabsTrigger>
-              <TabsTrigger value="profile">
-                <UserRound size={16} className="mr-2" /> 
-                Mon profil
+              <TabsTrigger 
+                value="profile" 
+                className="text-[8px] xs:text-[9px] sm:text-[10px] lg:text-xs py-1.5 xs:py-2 sm:py-2.5 px-1 xs:px-1.5 sm:px-2 flex flex-col xs:flex-row items-center gap-0.5 xs:gap-1 sm:gap-1.5"
+              >
+                <UserRound size={10} className="xs:w-3 xs:h-3 sm:w-3.5 sm:h-3.5 lg:w-4 lg:h-4" />
+                <span className="hidden xxs:inline">Mon profil</span>
+                <span className="xxs:hidden">Profil</span>
               </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="prescriptions">
+            <TabsContent value="prescriptions" className="mt-2 xs:mt-3 sm:mt-4 lg:mt-6">
               {hasActiveSubscription ? (
                 <PrescriptionsList userId={userId} />
               ) : (
                 <Card className="dark-container">
                   <CardHeader>
-                    <CardTitle>Ordonnances</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-sm xs:text-base sm:text-lg">Ordonnances</CardTitle>
+                    <CardDescription className="text-[10px] xs:text-xs sm:text-sm">
                       Vos ordonnances enregistrées
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="text-center py-8">
-                    <p className="text-muted-foreground mb-4">
+                  <CardContent className="text-center py-4 xs:py-6 sm:py-8">
+                    <p className="text-[10px] xs:text-xs sm:text-sm text-muted-foreground mb-2 xs:mb-3 sm:mb-4">
                       Accès restreint - Abonnement requis pour voir vos ordonnances
                     </p>
-                    <Button variant="outline" disabled>
+                    <Button variant="outline" disabled size="sm" className="text-[9px] xs:text-[10px] sm:text-xs">
                       Renouveler l'abonnement
                     </Button>
                   </CardContent>
@@ -306,42 +338,42 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
               )}
             </TabsContent>
             
-            <TabsContent value="medications">
+            <TabsContent value="medications" className="mt-2 xs:mt-3 sm:mt-4 lg:mt-6">
               <Card className="dark-container">
                 <CardHeader>
-                  <CardTitle>Mes médicaments</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-sm xs:text-base sm:text-lg">Mes médicaments</CardTitle>
+                  <CardDescription className="text-[10px] xs:text-xs sm:text-sm">
                     Liste de tous vos médicaments enregistrés ({medications.length})
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {loading ? (
-                    <div className="py-4 text-center">
-                      <div className="animate-pulse">Chargement des médicaments...</div>
+                    <div className="py-2 xs:py-3 sm:py-4 text-center">
+                      <div className="animate-pulse text-[10px] xs:text-xs sm:text-sm">Chargement des médicaments...</div>
                     </div>
                   ) : medications.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">
+                    <p className="text-[10px] xs:text-xs sm:text-sm text-muted-foreground text-center py-4 xs:py-6 sm:py-8">
                       Vous n'avez pas encore de médicaments enregistrés.
                     </p>
                   ) : hasActiveSubscription ? (
-                    <div className="space-y-4">
+                    <div className="space-y-2 xs:space-y-3 sm:space-y-4">
                       {medications.map((medication) => (
-                        <div key={medication.id} className="p-4 border rounded-lg">
+                        <div key={medication.id} className="p-2 xs:p-3 sm:p-4 border rounded">
                           <div className="flex items-start justify-between">
                             <div>
-                              <h4 className="font-semibold">{medication.name}</h4>
+                              <h4 className="font-semibold text-[10px] xs:text-xs sm:text-sm lg:text-base">{medication.name}</h4>
                               {medication.dosage && (
-                                <p className="text-sm text-muted-foreground">Dosage: {medication.dosage}</p>
+                                <p className="text-[9px] xs:text-[10px] sm:text-xs lg:text-sm text-muted-foreground">Dosage: {medication.dosage}</p>
                               )}
                               {medication.frequency && (
-                                <p className="text-sm text-muted-foreground">Fréquence: {medication.frequency}</p>
+                                <p className="text-[9px] xs:text-[10px] sm:text-xs lg:text-sm text-muted-foreground">Fréquence: {medication.frequency}</p>
                               )}
                               {medication.posology && (
-                                <p className="text-sm text-muted-foreground mt-2">Posologie: {medication.posology}</p>
+                                <p className="text-[9px] xs:text-[10px] sm:text-xs lg:text-sm text-muted-foreground mt-1 xs:mt-2">Posologie: {medication.posology}</p>
                               )}
                             </div>
                             {medication.treatment_duration && (
-                              <span className="text-xs bg-muted px-2 py-1 rounded">
+                              <span className="text-[8px] xs:text-[9px] sm:text-[10px] bg-muted px-1 xs:px-1.5 sm:px-2 py-0.5 xs:py-1 rounded">
                                 {medication.treatment_duration}
                               </span>
                             )}
@@ -350,11 +382,11 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground mb-4">
+                    <div className="text-center py-4 xs:py-6 sm:py-8">
+                      <p className="text-[10px] xs:text-xs sm:text-sm text-muted-foreground mb-2 xs:mb-3 sm:mb-4">
                         Accès restreint - Abonnement requis pour voir vos médicaments
                       </p>
-                      <Button variant="outline" disabled>
+                      <Button variant="outline" disabled size="sm" className="text-[9px] xs:text-[10px] sm:text-xs">
                         Renouveler l'abonnement
                       </Button>
                     </div>
@@ -363,20 +395,25 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
               </Card>
             </TabsContent>
             
-            <TabsContent value="reminders" className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">Mes rappels ({reminders.length})</h3>
+            <TabsContent value="reminders" className="space-y-2 xs:space-y-3 sm:space-y-4 mt-2 xs:mt-3 sm:mt-4 lg:mt-6">
+              <div className="flex flex-col xs:flex-row justify-between items-start xs:items-center gap-2 xs:gap-3 sm:gap-4">
+                <h3 className="text-sm xs:text-base sm:text-lg font-medium">Mes rappels ({reminders.length})</h3>
                 {hasActiveSubscription && (
-                  <Button onClick={() => setIsCreatingReminder(true)}>
-                    <Bell size={16} className="mr-2" />
-                    Ajouter un rappel
+                  <Button 
+                    onClick={() => setIsCreatingReminder(true)}
+                    size="sm"
+                    className="text-[9px] xs:text-[10px] sm:text-xs lg:text-sm px-2 xs:px-3 sm:px-4 py-1 xs:py-1.5 sm:py-2"
+                  >
+                    <Bell size={10} className="mr-1 xs:mr-1.5 sm:mr-2 xs:w-3 xs:h-3 sm:w-3.5 sm:h-3.5" />
+                    <span className="hidden xs:inline">Ajouter un rappel</span>
+                    <span className="xs:hidden">Ajouter</span>
                   </Button>
                 )}
               </div>
               
               {loading ? (
-                <div className="py-4 text-center">
-                  <div className="animate-pulse">Chargement des rappels...</div>
+                <div className="py-2 xs:py-3 sm:py-4 text-center">
+                  <div className="animate-pulse text-[10px] xs:text-xs sm:text-sm">Chargement des rappels...</div>
                 </div>
               ) : hasActiveSubscription ? (
                 <RemindersList 
@@ -385,11 +422,11 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
                 />
               ) : (
                 <Card className="dark-container">
-                  <CardContent className="text-center py-8">
-                    <p className="text-muted-foreground mb-4">
+                  <CardContent className="text-center py-4 xs:py-6 sm:py-8">
+                    <p className="text-[10px] xs:text-xs sm:text-sm text-muted-foreground mb-2 xs:mb-3 sm:mb-4">
                       Accès restreint - Abonnement requis pour gérer vos rappels
                     </p>
-                    <Button variant="outline" disabled>
+                    <Button variant="outline" disabled size="sm" className="text-[9px] xs:text-[10px] sm:text-xs">
                       Renouveler l'abonnement
                     </Button>
                   </CardContent>
@@ -397,7 +434,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
               )}
             </TabsContent>
 
-            <TabsContent value="profile">
+            <TabsContent value="profile" className="mt-2 xs:mt-3 sm:mt-4 lg:mt-6">
               <UserProfile userId={userId} />
             </TabsContent>
           </Tabs>
