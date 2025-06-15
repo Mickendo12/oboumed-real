@@ -62,23 +62,23 @@ const QRCodeCard: React.FC<QRCodeCardProps> = ({ qrCode, userName, userEmail, on
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-1.5 xs:space-y-2 sm:space-y-3 lg:space-y-4 px-2 xs:px-3 sm:px-4 lg:px-6 pb-2 xs:pb-3 sm:pb-4 lg:pb-6">
-        <div ref={qrCardRef} className="bg-white rounded border inline-block w-full flex justify-center">
-          <div className="flex flex-col items-center text-center p-1.5 xs:p-2 sm:p-3 lg:p-4">
-            <div className="w-16 h-16 xs:w-20 xs:h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 xl:w-32 xl:h-32">
+        <div ref={qrCardRef} className="bg-white rounded-lg border-2 border-gray-300 p-6 flex justify-center">
+          <div className="flex flex-col items-center text-center max-w-xs">
+            <div className="mb-4">
               <QRCodeDisplay 
                 value={secureUrl}
-                size={64}
+                size={200}
               />
             </div>
             
-            <div className="px-0.5 xs:px-1 sm:px-2 pb-0.5 xs:pb-1 space-y-0 mt-0.5 xs:mt-1 sm:mt-2">
-              <div className="text-[6px] xs:text-[7px] sm:text-[8px] lg:text-[9px] xl:text-[10px] font-medium text-blue-600 uppercase tracking-wide break-words max-w-[60px] xs:max-w-[80px] sm:max-w-[100px] lg:max-w-[120px]">
-                {userName || 'NOM NON RENSEIGNÉ'}
+            <div className="space-y-1">
+              <div className="text-2xl font-bold text-blue-600 uppercase tracking-wide">
+                OBOU
               </div>
-              <div className="text-[5px] xs:text-[6px] sm:text-[7px] lg:text-[8px] text-gray-600">
+              <div className="text-sm text-gray-600">
                 Dossier Médical - ObouMed
               </div>
-              <div className="text-[5px] xs:text-[6px] sm:text-[7px] lg:text-[8px] font-mono text-gray-800 break-all max-w-[60px] xs:max-w-[80px] sm:max-w-[100px] lg:max-w-[120px]">
+              <div className="text-xs font-mono text-gray-800 break-all mt-2">
                 {qrCode.access_key}
               </div>
             </div>
