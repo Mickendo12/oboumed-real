@@ -63,19 +63,35 @@ const QRCodeCard: React.FC<QRCodeCardProps> = ({ qrCode, userName, userEmail, on
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div ref={qrCardRef} className="bg-white p-6 rounded-lg border text-center">
-          <QRCodeDisplay 
-            value={secureUrl}
-            size={200}
-          />
-          <div className="mt-4 space-y-1">
-            <p className="text-sm font-medium text-gray-900">
-              {userName || 'Nom non renseigné'}
-            </p>
-            <p className="text-xs text-gray-600">{userEmail}</p>
-            <p className="text-xs font-mono text-gray-800 bg-gray-100 px-2 py-1 rounded">
-              {qrCode.access_key}
-            </p>
+        <div ref={qrCardRef} className="bg-white p-4 rounded-lg border">
+          <div className="flex items-center justify-center gap-6">
+            {/* Informations à gauche */}
+            <div className="flex flex-col justify-center text-left space-y-1 min-w-0 flex-1">
+              <div className="text-xs font-medium text-gray-900 truncate">
+                {userName || 'Nom non renseigné'}
+              </div>
+              <div className="text-[10px] text-gray-600 truncate">
+                {userEmail}
+              </div>
+            </div>
+
+            {/* QR Code au centre */}
+            <div className="flex-shrink-0">
+              <QRCodeDisplay 
+                value={secureUrl}
+                size={160}
+              />
+            </div>
+
+            {/* Clé d'accès à droite */}
+            <div className="flex flex-col justify-center text-right space-y-1 min-w-0 flex-1">
+              <div className="text-[10px] text-gray-500">
+                Clé d'accès
+              </div>
+              <div className="text-xs font-mono text-gray-800 bg-gray-100 px-1 py-0.5 rounded text-center">
+                {qrCode.access_key}
+              </div>
+            </div>
           </div>
         </div>
 
