@@ -9,16 +9,506 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      access_logs: {
+        Row: {
+          action: string
+          admin_id: string | null
+          created_at: string
+          details: Json | null
+          doctor_id: string | null
+          id: string
+          ip_address: unknown | null
+          patient_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          created_at?: string
+          details?: Json | null
+          doctor_id?: string | null
+          id?: string
+          ip_address?: unknown | null
+          patient_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          created_at?: string
+          details?: Json | null
+          doctor_id?: string | null
+          id?: string
+          ip_address?: unknown | null
+          patient_id?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      custom_medications: {
+        Row: {
+          active_ingredient: string | null
+          created_at: string
+          created_by: string | null
+          dosage: string | null
+          form: string | null
+          id: string
+          manufacturer: string | null
+          name: string
+          updated_at: string
+          usage_count: number
+        }
+        Insert: {
+          active_ingredient?: string | null
+          created_at?: string
+          created_by?: string | null
+          dosage?: string | null
+          form?: string | null
+          id?: string
+          manufacturer?: string | null
+          name: string
+          updated_at?: string
+          usage_count?: number
+        }
+        Update: {
+          active_ingredient?: string | null
+          created_at?: string
+          created_by?: string | null
+          dosage?: string | null
+          form?: string | null
+          id?: string
+          manufacturer?: string | null
+          name?: string
+          updated_at?: string
+          usage_count?: number
+        }
+        Relationships: []
+      }
+      doctor_access_sessions: {
+        Row: {
+          access_granted_at: string
+          created_at: string
+          doctor_id: string
+          expires_at: string
+          id: string
+          is_active: boolean
+          patient_id: string
+          qr_code_id: string | null
+        }
+        Insert: {
+          access_granted_at?: string
+          created_at?: string
+          doctor_id: string
+          expires_at: string
+          id?: string
+          is_active?: boolean
+          patient_id: string
+          qr_code_id?: string | null
+        }
+        Update: {
+          access_granted_at?: string
+          created_at?: string
+          doctor_id?: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          patient_id?: string
+          qr_code_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctor_access_sessions_qr_code_id_fkey"
+            columns: ["qr_code_id"]
+            isOneToOne: false
+            referencedRelation: "qr_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medication_database: {
+        Row: {
+          active_ingredient: string | null
+          created_at: string
+          created_by: string | null
+          dosage: string | null
+          form: string | null
+          id: string
+          manufacturer: string | null
+          name: string
+          updated_at: string
+          usage_count: number
+        }
+        Insert: {
+          active_ingredient?: string | null
+          created_at?: string
+          created_by?: string | null
+          dosage?: string | null
+          form?: string | null
+          id?: string
+          manufacturer?: string | null
+          name: string
+          updated_at?: string
+          usage_count?: number
+        }
+        Update: {
+          active_ingredient?: string | null
+          created_at?: string
+          created_by?: string | null
+          dosage?: string | null
+          form?: string | null
+          id?: string
+          manufacturer?: string | null
+          name?: string
+          updated_at?: string
+          usage_count?: number
+        }
+        Relationships: []
+      }
+      medications: {
+        Row: {
+          comments: string | null
+          created_at: string
+          doctor_prescribed: string | null
+          dosage: string | null
+          end_date: string | null
+          frequency: string | null
+          id: string
+          name: string
+          posology: string | null
+          prescription_id: string | null
+          start_date: string | null
+          treatment_duration: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string
+          doctor_prescribed?: string | null
+          dosage?: string | null
+          end_date?: string | null
+          frequency?: string | null
+          id?: string
+          name: string
+          posology?: string | null
+          prescription_id?: string | null
+          start_date?: string | null
+          treatment_duration?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string
+          doctor_prescribed?: string | null
+          dosage?: string | null
+          end_date?: string | null
+          frequency?: string | null
+          id?: string
+          name?: string
+          posology?: string | null
+          prescription_id?: string | null
+          start_date?: string | null
+          treatment_duration?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      prescriptions: {
+        Row: {
+          created_at: string
+          doctor_name: string | null
+          hospital_name: string | null
+          id: string
+          image_storage_path: string | null
+          image_url: string | null
+          pharmacy_name: string | null
+          prescription_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          doctor_name?: string | null
+          hospital_name?: string | null
+          id?: string
+          image_storage_path?: string | null
+          image_url?: string | null
+          pharmacy_name?: string | null
+          prescription_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          doctor_name?: string | null
+          hospital_name?: string | null
+          id?: string
+          image_storage_path?: string | null
+          image_url?: string | null
+          pharmacy_name?: string | null
+          prescription_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          access_status: Database["public"]["Enums"]["access_status_type"]
+          allergies: string | null
+          blood_type: string | null
+          chronic_diseases: string | null
+          created_at: string
+          current_medications: string | null
+          doctor_access_key: string | null
+          email: string
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          emergency_contact_relationship: string | null
+          height_cm: number | null
+          id: string
+          name: string | null
+          phone_number: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          share_with_doctor: boolean
+          updated_at: string
+          user_id: string
+          weight_kg: number | null
+        }
+        Insert: {
+          access_status?: Database["public"]["Enums"]["access_status_type"]
+          allergies?: string | null
+          blood_type?: string | null
+          chronic_diseases?: string | null
+          created_at?: string
+          current_medications?: string | null
+          doctor_access_key?: string | null
+          email: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
+          height_cm?: number | null
+          id?: string
+          name?: string | null
+          phone_number?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          share_with_doctor?: boolean
+          updated_at?: string
+          user_id: string
+          weight_kg?: number | null
+        }
+        Update: {
+          access_status?: Database["public"]["Enums"]["access_status_type"]
+          allergies?: string | null
+          blood_type?: string | null
+          chronic_diseases?: string | null
+          created_at?: string
+          current_medications?: string | null
+          doctor_access_key?: string | null
+          email?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
+          height_cm?: number | null
+          id?: string
+          name?: string | null
+          phone_number?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          share_with_doctor?: boolean
+          updated_at?: string
+          user_id?: string
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
+      qr_codes: {
+        Row: {
+          access_key: string
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          id: string
+          qr_code: string
+          status: Database["public"]["Enums"]["qr_status_type"]
+          user_id: string
+        }
+        Insert: {
+          access_key: string
+          created_at?: string
+          created_by?: string | null
+          expires_at: string
+          id?: string
+          qr_code: string
+          status?: Database["public"]["Enums"]["qr_status_type"]
+          user_id: string
+        }
+        Update: {
+          access_key?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          qr_code?: string
+          status?: Database["public"]["Enums"]["qr_status_type"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reminders: {
+        Row: {
+          created_at: string
+          days_of_week: number[]
+          dosage: string | null
+          frequency: string | null
+          id: string
+          is_active: boolean
+          medication_name: string
+          time: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          days_of_week: number[]
+          dosage?: string | null
+          frequency?: string | null
+          id?: string
+          is_active?: boolean
+          medication_name: string
+          time: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          days_of_week?: number[]
+          dosage?: string | null
+          frequency?: string | null
+          id?: string
+          is_active?: boolean
+          medication_name?: string
+          time?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      profiles_with_bmi: {
+        Row: {
+          access_status:
+            | Database["public"]["Enums"]["access_status_type"]
+            | null
+          allergies: string | null
+          blood_type: string | null
+          bmi: number | null
+          bmi_category: string | null
+          chronic_diseases: string | null
+          created_at: string | null
+          current_medications: string | null
+          doctor_access_key: string | null
+          email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          emergency_contact_relationship: string | null
+          height_cm: number | null
+          id: string | null
+          name: string | null
+          phone_number: string | null
+          role: Database["public"]["Enums"]["user_role"] | null
+          share_with_doctor: boolean | null
+          updated_at: string | null
+          user_id: string | null
+          weight_kg: number | null
+        }
+        Insert: {
+          access_status?:
+            | Database["public"]["Enums"]["access_status_type"]
+            | null
+          allergies?: string | null
+          blood_type?: string | null
+          bmi?: never
+          bmi_category?: never
+          chronic_diseases?: string | null
+          created_at?: string | null
+          current_medications?: string | null
+          doctor_access_key?: string | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
+          height_cm?: number | null
+          id?: string | null
+          name?: string | null
+          phone_number?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          share_with_doctor?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+          weight_kg?: number | null
+        }
+        Update: {
+          access_status?:
+            | Database["public"]["Enums"]["access_status_type"]
+            | null
+          allergies?: string | null
+          blood_type?: string | null
+          bmi?: never
+          bmi_category?: never
+          chronic_diseases?: string | null
+          created_at?: string | null
+          current_medications?: string | null
+          doctor_access_key?: string | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
+          height_cm?: number | null
+          id?: string | null
+          name?: string | null
+          phone_number?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          share_with_doctor?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      calculate_bmi: {
+        Args: { weight_kg: number; height_cm: number }
+        Returns: number
+      }
+      cleanup_expired_sessions: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      generate_qr_code: {
+        Args: { patient_user_id: string }
+        Returns: string
+      }
+      get_user_role: {
+        Args: { user_uuid: string }
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
+      is_admin: {
+        Args: { user_uuid: string }
+        Returns: boolean
+      }
+      is_doctor: {
+        Args: { user_uuid: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      access_status_type: "active" | "restricted" | "expired"
+      qr_status_type: "active" | "expired" | "used"
+      user_role: "user" | "doctor" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +623,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      access_status_type: ["active", "restricted", "expired"],
+      qr_status_type: ["active", "expired", "used"],
+      user_role: ["user", "doctor", "admin"],
+    },
   },
 } as const
