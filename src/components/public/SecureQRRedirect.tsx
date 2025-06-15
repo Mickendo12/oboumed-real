@@ -3,12 +3,19 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, Shield } from 'lucide-react';
+import { decodeQRKey } from '@/utils/urlEncryption';
 
 const SecureQRRedirect: React.FC = () => {
   const { qrCode } = useParams<{ qrCode: string }>();
   const [message, setMessage] = useState('Vérification en cours...');
 
   useEffect(() => {
+    // Décoder la clé pour vérifier sa validité
+    if (qrCode) {
+      const decodedKey = decodeQRKey(qrCode);
+      console.log('QR Code décodé:', decodedKey ? 'valide' : 'invalide');
+    }
+
     // Empêcher l'accès direct aux dossiers médicaux
     const timer = setTimeout(() => {
       setMessage('Accès restreint aux professionnels de santé autorisés uniquement.');

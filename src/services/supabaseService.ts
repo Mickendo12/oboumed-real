@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ReminderDB, ReminderInput } from '@/types/reminder';
+import { decodeQRKey } from '@/utils/urlEncryption';
 
 export interface Profile {
   id: string;
@@ -347,8 +348,17 @@ export const getQRCodesForUser = async (userId: string): Promise<QRCode[]> => {
   }));
 };
 
-export const validateQRCode = async (qrCode: string): Promise<{ valid: boolean; userId?: string; qrCodeId?: string }> => {
-  console.log('🔄 Validating QR code:', qrCode);
+export const validateQRCode = async (encodedQrCode: string): Promise<{ valid: boolean; userId?: string; qrCodeId?: string }> => {
+  console.log('🔄 Validating encoded QR code');
+  
+  // Décoder la clé
+  const qrCode = decodeQRKey(encodedQrCode);
+  if (!qrCode) {
+    console.log('❌ Failed to decode QR code');
+    return { valid: false };
+  }
+  
+  console.log('🔄 Validating decoded QR code:', qrCode);
   
   const { data, error } = await supabase
     .from('qr_codes')

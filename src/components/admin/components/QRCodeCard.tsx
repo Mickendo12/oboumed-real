@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { QrCode, Copy, CheckCircle, Download } from 'lucide-react';
 import QRCodeDisplay from '../QRCodeDisplay';
 import { QRCode } from '@/services/supabaseService';
+import { generateSecureQRUrl } from '@/utils/urlEncryption';
 
 interface QRCodeCardProps {
   qrCode: QRCode;
@@ -15,6 +16,7 @@ interface QRCodeCardProps {
 
 const QRCodeCard: React.FC<QRCodeCardProps> = ({ qrCode, userName, userEmail, onCopy }) => {
   const qrCardRef = useRef<HTMLDivElement>(null);
+  const secureUrl = generateSecureQRUrl(qrCode.qr_code);
 
   const downloadQRCode = async () => {
     if (!qrCardRef.current) return;
@@ -63,7 +65,7 @@ const QRCodeCard: React.FC<QRCodeCardProps> = ({ qrCode, userName, userEmail, on
       <CardContent className="space-y-4">
         <div ref={qrCardRef} className="bg-white p-6 rounded-lg border text-center">
           <QRCodeDisplay 
-            value={`${window.location.origin}/qr/${qrCode.qr_code}`}
+            value={secureUrl}
             size={200}
           />
           <div className="mt-4 space-y-1">
@@ -81,12 +83,12 @@ const QRCodeCard: React.FC<QRCodeCardProps> = ({ qrCode, userName, userEmail, on
           <p className="text-sm font-medium">URL du QR Code:</p>
           <div className="flex items-center gap-2">
             <code className="flex-1 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs break-all">
-              {window.location.origin}/qr/{qrCode.qr_code}
+              {secureUrl}
             </code>
             <Button
               size="sm"
               variant="outline"
-              onClick={() => onCopy(`${window.location.origin}/qr/${qrCode.qr_code}`, 'URL')}
+              onClick={() => onCopy(secureUrl, 'URL')}
             >
               <Copy size={14} />
             </Button>
