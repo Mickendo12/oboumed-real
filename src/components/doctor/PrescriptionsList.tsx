@@ -9,7 +9,7 @@ import {
   Calendar, 
   Hospital, 
   User, 
-  Pharmacy, 
+  Building2, 
   Eye,
   ChevronDown,
   ChevronUp,
@@ -114,7 +114,7 @@ const PrescriptionsList: React.FC<PrescriptionsListProps> = ({ prescriptions }) 
                 )}
                 {prescription.pharmacy_name && (
                   <div className="flex items-center gap-2">
-                    <Pharmacy size={16} className="text-muted-foreground" />
+                    <Building2 size={16} className="text-muted-foreground" />
                     <span className="text-sm">
                       <strong>Pharmacie:</strong> {prescription.pharmacy_name}
                     </span>
