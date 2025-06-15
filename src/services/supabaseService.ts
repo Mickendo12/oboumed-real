@@ -1,6 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ReminderDB, ReminderInput } from '@/types/reminder';
 import { decodeQRKey } from '@/utils/urlEncryption';
+import { securityService } from './securityService';
+import { decryptQRCode } from '@/utils/encryption';
 
 export interface Profile {
   id: string;
@@ -348,43 +350,55 @@ export const getQRCodesForUser = async (userId: string): Promise<QRCode[]> => {
   }));
 };
 
-export const validateQRCode = async (encodedQrCode: string): Promise<{ valid: boolean; userId?: string; qrCodeId?: string }> => {
-  console.log('🔄 Validating encoded QR code');
-  
-  // Décoder la clé
-  const qrCode = decodeQRKey(encodedQrCode);
-  if (!qrCode) {
-    console.log('❌ Failed to decode QR code');
-    return { valid: false };
-  }
-  
-  console.log('🔄 Validating decoded QR code:', qrCode);
-  
-  const { data, error } = await supabase
-    .from('qr_codes')
-    .select('id, user_id, status, expires_at')
-    .eq('qr_code', qrCode)
-    .eq('status', 'active')
-    .maybeSingle();
+export const validateQRCode = async (qrCodeData: string): Promise<{
+  valid: boolean;
+  userId?: string;
+  qrCodeId?: string;
+  error?: string;
+}> => {
+  try {
+    console.log('🔄 Validating QR code with new encryption...');
     
-  if (error) {
+    // Essayer de déchiffrer avec le nouveau système
+    const decryptedCode = decryptQRCode(qrCodeData);
+    
+    if (!decryptedCode) {
+      console.log('❌ Failed to decrypt QR code');
+      return { valid: false, error: 'QR code invalide ou corrompu' };
+    }
+
+    console.log('✅ QR code decrypted successfully');
+
+    // Validation via edge function
+    const { data, error } = await supabase.functions.invoke('validate-qr-access', {
+      body: { qrCode: decryptedCode }
+    });
+
+    if (error) {
+      console.error('❌ Edge function error:', error);
+      return { valid: false, error: error.message };
+    }
+
+    if (!data.userId) {
+      return { valid: false, error: 'QR code invalide ou expiré' };
+    }
+
+    // Récupérer l'ID du QR code pour les logs
+    const { data: qrCodeRecord } = await supabase
+      .from('qr_codes')
+      .select('id')
+      .eq('qr_code', decryptedCode)
+      .single();
+
+    return {
+      valid: true,
+      userId: data.userId,
+      qrCodeId: qrCodeRecord?.id
+    };
+  } catch (error: any) {
     console.error('❌ Error validating QR code:', error);
-    return { valid: false };
+    return { valid: false, error: error.message };
   }
-  
-  if (!data) {
-    console.log('❌ QR code not found or inactive');
-    return { valid: false };
-  }
-  
-  const isExpired = new Date(data.expires_at) < new Date();
-  if (isExpired) {
-    console.log('❌ QR code expired');
-    return { valid: false };
-  }
-  
-  console.log('✅ QR code valid for user:', data.user_id);
-  return { valid: true, userId: data.user_id, qrCodeId: data.id };
 };
 
 export const validateAccessKey = async (accessKey: string): Promise<{ valid: boolean; userId?: string; qrCodeId?: string }> => {
@@ -418,72 +432,32 @@ export const validateAccessKey = async (accessKey: string): Promise<{ valid: boo
 };
 
 // Fonctions de session d'accès médecin améliorées
-export const createDoctorSession = async (patientId: string, doctorId: string, qrCodeId?: string): Promise<DoctorAccessSession> => {
-  console.log('Creating doctor session:', { patientId, doctorId, qrCodeId });
+export const createDoctorSession = async (
+  patientId: string, 
+  doctorId: string, 
+  qrCodeId?: string
+): Promise<{ id: string; expires_at: string }> => {
+  console.log('🔄 Creating doctor session with security service...');
   
-  // Verify doctor role
-  const { data: doctorProfile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('user_id', doctorId)
-    .single();
+  try {
+    const sessionId = await securityService.createSession(patientId, doctorId, qrCodeId);
     
-  if (!doctorProfile || doctorProfile.role !== 'doctor') {
-    throw new Error('Seuls les médecins peuvent créer des sessions d\'accès');
-  }
-  
-  // Check patient access status
-  const { data: patientProfile } = await supabase
-    .from('profiles')
-    .select('access_status')
-    .eq('user_id', patientId)
-    .single();
-    
-  if (!patientProfile) {
-    throw new Error('Patient introuvable');
-  }
-  
-  if (patientProfile.access_status === 'restricted') {
-    throw new Error('L\'accès au dossier de ce patient a été restreint');
-  }
-  
-  // Mark old sessions as inactive
-  await supabase
-    .from('doctor_access_sessions')
-    .update({ is_active: false })
-    .eq('patient_id', patientId)
-    .eq('doctor_id', doctorId);
-  
-  const sessionData = {
-    patient_id: patientId,
-    doctor_id: doctorId,
-    qr_code_id: qrCodeId || null,
-    access_granted_at: new Date().toISOString(),
-    expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes
-    is_active: true
-  };
+    if (!sessionId) {
+      throw new Error('Impossible de créer la session sécurisée');
+    }
 
-  const { data, error } = await supabase
-    .from('doctor_access_sessions')
-    .insert(sessionData)
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('Error creating doctor session:', error);
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+    
+    console.log('✅ Secure doctor session created:', sessionId);
+    
+    return {
+      id: sessionId,
+      expires_at: expiresAt.toISOString()
+    };
+  } catch (error) {
+    console.error('❌ Error creating secure doctor session:', error);
     throw error;
   }
-  
-  // Log the access
-  await logAccess({
-    patient_id: patientId,
-    doctor_id: doctorId,
-    action: 'session_created',
-    details: { session_id: data.id, qr_code_id: qrCodeId }
-  });
-  
-  console.log('Doctor session created successfully:', data);
-  return data;
 };
 
 export const getActiveDoctorSessions = async (doctorId: string): Promise<DoctorAccessSession[]> => {
@@ -631,4 +605,14 @@ export const cleanupExpiredData = async (): Promise<void> => {
   } catch (error) {
     console.error('Error calling cleanup function:', error);
   }
+};
+
+// Nouvelle fonction pour valider les sessions avec sécurité renforcée
+export const validateDoctorSession = async (sessionId: string): Promise<boolean> => {
+  return await securityService.validateSession(sessionId);
+};
+
+// Nouvelle fonction pour révoquer une session
+export const revokeDoctorSession = async (sessionId: string): Promise<void> => {
+  await securityService.revokeSession(sessionId);
 };
