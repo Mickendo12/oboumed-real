@@ -63,23 +63,23 @@ const QRCodeCard: React.FC<QRCodeCardProps> = ({ qrCode, userName, userEmail, on
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div ref={qrCardRef} className="bg-white p-2 rounded-lg border">
+        <div ref={qrCardRef} className="bg-white rounded-lg border inline-block">
           <div className="flex flex-col items-center text-center">
             {/* QR Code */}
             <QRCodeDisplay 
               value={secureUrl}
-              size={200}
+              size={120}
             />
             
             {/* Informations minimalistes sous le QR code */}
-            <div className="mt-1 space-y-0.5">
-              <div className="text-xs font-medium text-blue-600 uppercase tracking-wide">
+            <div className="px-2 pb-1 space-y-0">
+              <div className="text-[9px] font-medium text-blue-600 uppercase tracking-wide">
                 {userName || 'NOM NON RENSEIGNÉ'}
               </div>
-              <div className="text-[10px] text-gray-600">
+              <div className="text-[8px] text-gray-600">
                 Dossier Médical - ObouMed
               </div>
-              <div className="text-[10px] font-mono text-gray-800">
+              <div className="text-[8px] font-mono text-gray-800">
                 {qrCode.access_key}
               </div>
             </div>
