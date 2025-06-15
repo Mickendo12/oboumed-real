@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { 
   getAllProfiles, 
   generateQRCodeForUser, 
@@ -20,16 +20,16 @@ export const useQRCodeGenerator = () => {
   const loadProfiles = useCallback(async () => {
     try {
       setLoadingProfiles(true);
-      console.log('🔄 Chargement des profils pour générateur QR...');
+      console.log('🔄 Loading profiles for QR generator...');
       const allProfiles = await getAllProfiles();
-      console.log('✅ Profils chargés:', allProfiles.length, 'profils');
+      console.log('✅ Profiles loaded:', allProfiles.length, 'profiles');
       setProfiles(allProfiles);
-    } catch (error) {
-      console.error('❌ Erreur chargement profils:', error);
+    } catch (error: any) {
+      console.error('❌ Error loading profiles:', error);
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: `Impossible de charger les profils: ${error.message || 'Erreur inconnue'}`
+        description: `Impossible de charger les profils: ${error?.message || 'Erreur inconnue'}`
       });
     } finally {
       setLoadingProfiles(false);
@@ -40,17 +40,18 @@ export const useQRCodeGenerator = () => {
     if (!selectedUserId) return;
     
     try {
-      console.log('🔄 Chargement codes QR pour utilisateur:', selectedUserId);
+      console.log('🔄 Loading QR codes for user:', selectedUserId);
       const userQrCodes = await getQRCodesForUser(selectedUserId);
-      console.log('✅ Codes QR chargés:', userQrCodes.length, 'codes');
+      console.log('✅ QR codes loaded:', userQrCodes.length, 'codes');
       setQrCodes(userQrCodes);
-    } catch (error) {
-      console.error('❌ Erreur chargement codes QR:', error);
+    } catch (error: any) {
+      console.error('❌ Error loading QR codes:', error);
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: `Impossible de charger les codes QR: ${error.message || 'Erreur inconnue'}`
+        description: `Impossible de charger les codes QR: ${error?.message || 'Erreur inconnue'}`
       });
+      setQrCodes([]);
     }
   }, [selectedUserId, toast]);
 
@@ -69,7 +70,7 @@ export const useQRCodeGenerator = () => {
 
     try {
       setLoading(true);
-      console.log('🔄 Génération QR code pour:', userName, '(ID:', selectedUserId, ')');
+      console.log('🔄 Generating QR code for:', userName, '(ID:', selectedUserId, ')');
       
       toast({
         title: "Génération en cours",
@@ -77,9 +78,9 @@ export const useQRCodeGenerator = () => {
       });
 
       const qrCode = await generateQRCodeForUser(selectedUserId);
-      console.log('✅ Code QR généré avec succès:', qrCode);
+      console.log('✅ QR code generated successfully:', qrCode);
       
-      // Recharger les codes QR pour afficher le nouveau
+      // Reload QR codes to display the new one
       await loadQRCodes();
       
       toast({
@@ -87,12 +88,12 @@ export const useQRCodeGenerator = () => {
         description: `Code QR et clé d'accès générés pour ${userName}`
       });
       
-    } catch (error) {
-      console.error('❌ Erreur génération QR code:', error);
+    } catch (error: any) {
+      console.error('❌ Error generating QR code:', error);
       toast({
         variant: "destructive",
         title: "Erreur de génération",
-        description: `Impossible de générer le code QR pour ${userName}: ${error.message || 'Erreur inconnue'}`
+        description: `Impossible de générer le code QR pour ${userName}: ${error?.message || 'Erreur inconnue'}`
       });
     } finally {
       setLoading(false);
@@ -107,11 +108,15 @@ export const useQRCodeGenerator = () => {
         description: `${type} copié dans le presse-papiers.`
       });
     } catch (error) {
-      console.error('❌ Erreur copie presse-papiers:', error);
-      // Fallback pour les navigateurs qui ne supportent pas l'API clipboard
+      console.error('❌ Clipboard error:', error);
+      // Fallback for browsers that don't support clipboard API
       const textArea = document.createElement('textarea');
       textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
       document.body.appendChild(textArea);
+      textArea.focus();
       textArea.select();
       try {
         document.execCommand('copy');

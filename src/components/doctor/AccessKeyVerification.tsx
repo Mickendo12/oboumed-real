@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Key, QrCode } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { validateAccessKey, getUserProfile, createDoctorSession } from '@/services/supabaseService';
 import QRCodeScanner from './QRCodeScanner';
 
@@ -34,10 +34,10 @@ const AccessKeyVerification: React.FC<AccessKeyVerificationProps> = ({
 
     try {
       setLoading(true);
-      console.log('Verifying access key:', accessKey);
+      console.log('🔄 Verifying access key:', accessKey);
 
       const validation = await validateAccessKey(accessKey.trim());
-      console.log('Access key validation result:', validation);
+      console.log('✅ Access key validation result:', validation);
 
       if (!validation.valid || !validation.userId) {
         toast({
@@ -49,7 +49,7 @@ const AccessKeyVerification: React.FC<AccessKeyVerificationProps> = ({
       }
 
       const profile = await getUserProfile(validation.userId);
-      console.log('Patient profile retrieved:', profile);
+      console.log('✅ Patient profile retrieved:', profile);
 
       if (!profile) {
         toast({
@@ -69,10 +69,10 @@ const AccessKeyVerification: React.FC<AccessKeyVerificationProps> = ({
         return;
       }
 
-      // Créer une session d'accès médecin
-      console.log('Creating doctor session...');
+      // Create doctor access session
+      console.log('🔄 Creating doctor session...');
       const session = await createDoctorSession(validation.userId, doctorId, validation.qrCodeId);
-      console.log('Doctor session created:', session);
+      console.log('✅ Doctor session created:', session);
 
       const patientData = {
         profile: {
@@ -83,7 +83,7 @@ const AccessKeyVerification: React.FC<AccessKeyVerificationProps> = ({
         sessionId: session.id
       };
 
-      console.log('Sending patient data to parent:', patientData);
+      console.log('✅ Sending patient data to parent:', patientData);
 
       onAccessGranted(patientData);
       setAccessKey('');
@@ -93,12 +93,12 @@ const AccessKeyVerification: React.FC<AccessKeyVerificationProps> = ({
         description: `Session d'accès créée pour ${profile.name || profile.email} (30 minutes)`
       });
 
-    } catch (error) {
-      console.error('Error verifying access key:', error);
+    } catch (error: any) {
+      console.error('❌ Error verifying access key:', error);
       toast({
         variant: "destructive",
         title: "Erreur de vérification",
-        description: `Impossible de vérifier la clé d'accès: ${error.message || 'Erreur inconnue'}`
+        description: `Impossible de vérifier la clé d'accès: ${error?.message || 'Erreur inconnue'}`
       });
     } finally {
       setLoading(false);
@@ -106,7 +106,7 @@ const AccessKeyVerification: React.FC<AccessKeyVerificationProps> = ({
   };
 
   const handleQRScanSuccess = (patientData: any) => {
-    console.log('QR scan success, forwarding data:', patientData);
+    console.log('✅ QR scan success, forwarding data:', patientData);
     onAccessGranted(patientData);
   };
 
@@ -156,7 +156,7 @@ const AccessKeyVerification: React.FC<AccessKeyVerificationProps> = ({
               {loading ? 'Vérification...' : 'Accéder au dossier'}
             </Button>
             
-            <div className="text-xs text-muted-foreground">
+            <div className="text-xs text-muted-foreground space-y-1">
               <p>• La clé d'accès vous donne accès au dossier médical complet</p>
               <p>• L'accès est valide pendant 30 minutes</p>
               <p>• Toute tentative d'accès est enregistrée</p>

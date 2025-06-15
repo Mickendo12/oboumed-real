@@ -14,9 +14,12 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🔄 QR validation request received');
+    
     const { qrCode } = await req.json();
 
     if (!qrCode) {
+      console.log('❌ Missing QR code in request');
       return new Response(
         JSON.stringify({ error: 'QR code manquant' }),
         { 
@@ -26,12 +29,14 @@ serve(async (req) => {
       );
     }
 
+    console.log('🔄 Validating QR code:', qrCode);
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Vérifier si le QR code existe et est actif
+    // Check if QR code exists and is active
     const { data: qrCodeData, error: qrError } = await supabase
       .from('qr_codes')
       .select('*')
@@ -40,7 +45,7 @@ serve(async (req) => {
       .single();
 
     if (qrError || !qrCodeData) {
-      console.log('QR code not found or inactive:', qrError);
+      console.log('❌ QR code not found or inactive:', qrError);
       return new Response(
         JSON.stringify({ error: 'QR code invalide ou expiré' }),
         { 
@@ -50,14 +55,31 @@ serve(async (req) => {
       );
     }
 
-    // Créer une session d'accès de 30 minutes (changé de 3 minutes)
+    console.log('✅ QR code found:', qrCodeData.id);
+
+    // Check if QR code is expired
+    const isExpired = new Date(qrCodeData.expires_at) < new Date();
+    if (isExpired) {
+      console.log('❌ QR code expired');
+      return new Response(
+        JSON.stringify({ error: 'QR code expiré' }),
+        { 
+          status: 410, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // Create 30-minute access session
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
 
-    // Extraire l'adresse IP correctement (prendre la première IP si plusieurs)
+    // Get IP address properly (take first IP if multiple)
     const forwardedFor = req.headers.get('x-forwarded-for');
     const ipAddress = forwardedFor ? forwardedFor.split(',')[0].trim() : 'unknown';
 
-    // Enregistrer l'accès
+    console.log('🔄 Logging access for user:', qrCodeData.user_id);
+
+    // Log the access
     const { error: logError } = await supabase
       .from('access_logs')
       .insert({
@@ -72,15 +94,21 @@ serve(async (req) => {
       });
 
     if (logError) {
-      console.error('Error logging access:', logError);
+      console.error('⚠️ Error logging access:', logError);
+    } else {
+      console.log('✅ Access logged successfully');
     }
 
+    const response = { 
+      userId: qrCodeData.user_id,
+      expiresAt: expiresAt.toISOString(),
+      accessGranted: true
+    };
+
+    console.log('✅ QR validation successful:', response);
+
     return new Response(
-      JSON.stringify({ 
-        userId: qrCodeData.user_id,
-        expiresAt: expiresAt.toISOString(),
-        accessGranted: true
-      }),
+      JSON.stringify(response),
       { 
         status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -88,7 +116,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in validate-qr-access:', error);
+    console.error('❌ Error in validate-qr-access:', error);
     return new Response(
       JSON.stringify({ error: 'Erreur interne du serveur' }),
       { 

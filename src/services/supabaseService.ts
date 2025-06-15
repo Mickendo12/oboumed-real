@@ -251,10 +251,10 @@ export const deleteReminder = async (id: string): Promise<void> => {
 
 // Fonctions QR Code améliorées
 export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => {
-  console.log('🔄 Début génération QR code pour utilisateur:', userId);
+  console.log('🔄 Starting QR code generation for user:', userId);
   
   try {
-    // Vérifier que l'utilisateur existe
+    // Verify user exists first
     const { data: userProfile, error: profileError } = await supabase
       .from('profiles')
       .select('user_id, name, email')
@@ -262,14 +262,14 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
       .single();
 
     if (profileError || !userProfile) {
-      console.error('❌ Utilisateur introuvable:', profileError);
-      throw new Error('Utilisateur introuvable');
+      console.error('❌ User not found:', profileError);
+      throw new Error('User not found');
     }
 
-    console.log('✅ Utilisateur trouvé:', userProfile.name || userProfile.email);
+    console.log('✅ User found:', userProfile.name || userProfile.email);
 
-    // Marquer tous les anciens QR codes comme expirés pour cet utilisateur
-    console.log('🔄 Expiration des anciens QR codes...');
+    // Expire all existing active QR codes for this user
+    console.log('🔄 Expiring old QR codes...');
     const { error: expireError } = await supabase
       .from('qr_codes')
       .update({ status: 'expired' })
@@ -277,34 +277,30 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
       .eq('status', 'active');
 
     if (expireError) {
-      console.error('⚠️ Erreur lors de l\'expiration des anciens codes:', expireError);
+      console.error('⚠️ Error expiring old codes:', expireError);
     } else {
-      console.log('✅ Anciens QR codes expirés');
+      console.log('✅ Old QR codes expired');
     }
 
-    // Générer un nouveau code QR unique
-    console.log('🔄 Génération du code QR...');
-    const { data: qrCodeText, error: funcError } = await supabase.rpc('generate_qr_code', {
-      patient_user_id: userId
-    });
+    // Generate unique QR code and access key
+    const timestamp = Date.now().toString();
+    const randomPart = Math.random().toString(36).substring(2, 15);
+    const qrCodeValue = `${timestamp}-${randomPart}`;
+    const accessKey = `${randomPart}-${timestamp}`;
     
-    if (funcError) {
-      console.error('❌ Erreur fonction generate_qr_code:', funcError);
-      throw new Error(`Erreur de génération: ${funcError.message}`);
-    }
+    console.log('🔄 Generated codes - QR:', qrCodeValue, 'Key:', accessKey);
     
-    console.log('✅ Code QR généré:', qrCodeText);
-    
-    // Créer l'enregistrement QR code
+    // Create new QR code record
     const qrCodeData = {
       user_id: userId,
-      qr_code: qrCodeText,
-      access_key: qrCodeText, // Utiliser le même code pour l'access_key
+      qr_code: qrCodeValue,
+      access_key: accessKey,
       status: 'active' as const,
-      expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 an
+      expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year
+      created_by: userId
     };
 
-    console.log('🔄 Insertion du QR code dans la base:', qrCodeData);
+    console.log('🔄 Inserting QR code into database:', qrCodeData);
     
     const { data: newQrCode, error: insertError } = await supabase
       .from('qr_codes')
@@ -313,11 +309,11 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
       .single();
       
     if (insertError) {
-      console.error('❌ Erreur insertion QR code:', insertError);
-      throw new Error(`Impossible de créer le QR code: ${insertError.message}`);
+      console.error('❌ Error inserting QR code:', insertError);
+      throw new Error(`Cannot create QR code: ${insertError.message}`);
     }
     
-    console.log('✅ QR code créé avec succès:', newQrCode);
+    console.log('✅ QR code created successfully:', newQrCode);
     
     return {
       ...newQrCode,
@@ -325,12 +321,14 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
     };
     
   } catch (error) {
-    console.error('❌ Erreur complète génération QR:', error);
+    console.error('❌ Complete QR generation error:', error);
     throw error;
   }
 };
 
 export const getQRCodesForUser = async (userId: string): Promise<QRCode[]> => {
+  console.log('🔄 Fetching QR codes for user:', userId);
+  
   const { data, error } = await supabase
     .from('qr_codes')
     .select('*')
@@ -338,10 +336,11 @@ export const getQRCodesForUser = async (userId: string): Promise<QRCode[]> => {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching QR codes:', error);
+    console.error('❌ Error fetching QR codes:', error);
     throw error;
   }
 
+  console.log('✅ QR codes fetched:', data?.length || 0, 'codes');
   return (data || []).map((q: any) => ({
     ...q,
     status: (q.status ?? 'active') as 'active' | 'expired' | 'used',
@@ -349,7 +348,7 @@ export const getQRCodesForUser = async (userId: string): Promise<QRCode[]> => {
 };
 
 export const validateQRCode = async (qrCode: string): Promise<{ valid: boolean; userId?: string; qrCodeId?: string }> => {
-  console.log('Validating QR code:', qrCode);
+  console.log('🔄 Validating QR code:', qrCode);
   
   const { data, error } = await supabase
     .from('qr_codes')
@@ -359,27 +358,27 @@ export const validateQRCode = async (qrCode: string): Promise<{ valid: boolean; 
     .maybeSingle();
     
   if (error) {
-    console.error('Error validating QR code:', error);
+    console.error('❌ Error validating QR code:', error);
     return { valid: false };
   }
   
   if (!data) {
-    console.log('QR code not found or inactive');
+    console.log('❌ QR code not found or inactive');
     return { valid: false };
   }
   
   const isExpired = new Date(data.expires_at) < new Date();
   if (isExpired) {
-    console.log('QR code expired');
+    console.log('❌ QR code expired');
     return { valid: false };
   }
   
-  console.log('QR code valid for user:', data.user_id);
+  console.log('✅ QR code valid for user:', data.user_id);
   return { valid: true, userId: data.user_id, qrCodeId: data.id };
 };
 
 export const validateAccessKey = async (accessKey: string): Promise<{ valid: boolean; userId?: string; qrCodeId?: string }> => {
-  console.log('Validating access key:', accessKey);
+  console.log('🔄 Validating access key:', accessKey);
   
   const { data, error } = await supabase
     .from('qr_codes')
@@ -389,22 +388,22 @@ export const validateAccessKey = async (accessKey: string): Promise<{ valid: boo
     .maybeSingle();
     
   if (error) {
-    console.error('Error validating access key:', error);
+    console.error('❌ Error validating access key:', error);
     return { valid: false };
   }
   
   if (!data) {
-    console.log('Access key not found or inactive');
+    console.log('❌ Access key not found or inactive');
     return { valid: false };
   }
   
   const isExpired = new Date(data.expires_at) < new Date();
   if (isExpired) {
-    console.log('Access key expired');
+    console.log('❌ Access key expired');
     return { valid: false };
   }
   
-  console.log('Access key valid for user:', data.user_id);
+  console.log('✅ Access key valid for user:', data.user_id);
   return { valid: true, userId: data.user_id, qrCodeId: data.id };
 };
 
@@ -412,7 +411,7 @@ export const validateAccessKey = async (accessKey: string): Promise<{ valid: boo
 export const createDoctorSession = async (patientId: string, doctorId: string, qrCodeId?: string): Promise<DoctorAccessSession> => {
   console.log('Creating doctor session:', { patientId, doctorId, qrCodeId });
   
-  // Vérifier que l'utilisateur est bien un médecin
+  // Verify doctor role
   const { data: doctorProfile } = await supabase
     .from('profiles')
     .select('role')
@@ -423,7 +422,7 @@ export const createDoctorSession = async (patientId: string, doctorId: string, q
     throw new Error('Seuls les médecins peuvent créer des sessions d\'accès');
   }
   
-  // Vérifier le statut d'accès du patient
+  // Check patient access status
   const { data: patientProfile } = await supabase
     .from('profiles')
     .select('access_status')
@@ -438,7 +437,7 @@ export const createDoctorSession = async (patientId: string, doctorId: string, q
     throw new Error('L\'accès au dossier de ce patient a été restreint');
   }
   
-  // Marquer les anciennes sessions comme inactives
+  // Mark old sessions as inactive
   await supabase
     .from('doctor_access_sessions')
     .update({ is_active: false })
@@ -465,7 +464,7 @@ export const createDoctorSession = async (patientId: string, doctorId: string, q
     throw error;
   }
   
-  // Logger l'accès
+  // Log the access
   await logAccess({
     patient_id: patientId,
     doctor_id: doctorId,
