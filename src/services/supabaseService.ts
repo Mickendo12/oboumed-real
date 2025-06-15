@@ -251,65 +251,83 @@ export const deleteReminder = async (id: string): Promise<void> => {
 
 // Fonctions QR Code améliorées
 export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => {
-  console.log('Generating QR code for user:', userId);
+  console.log('🔄 Début génération QR code pour utilisateur:', userId);
   
-  // Vérifier s'il existe déjà un QR code actif pour cet utilisateur
-  const { data: existingQRCode } = await supabase
-    .from('qr_codes')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('status', 'active')
-    .maybeSingle();
+  try {
+    // Vérifier que l'utilisateur existe
+    const { data: userProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('user_id, name, email')
+      .eq('user_id', userId)
+      .single();
 
-  // Si un QR code actif existe déjà, le retourner
-  if (existingQRCode) {
-    console.log('Existing active QR code found:', existingQRCode);
-    return {
-      ...existingQRCode,
-      status: (existingQRCode.status ?? 'active') as 'active' | 'expired' | 'used',
-    };
-  }
+    if (profileError || !userProfile) {
+      console.error('❌ Utilisateur introuvable:', profileError);
+      throw new Error('Utilisateur introuvable');
+    }
 
-  // Marquer tous les anciens QR codes comme expirés
-  await supabase
-    .from('qr_codes')
-    .update({ status: 'expired' })
-    .eq('user_id', userId);
+    console.log('✅ Utilisateur trouvé:', userProfile.name || userProfile.email);
 
-  console.log('Calling generate_qr_code function...');
-  const { data: qrCodeText, error: funcError } = await supabase.rpc('generate_qr_code', {
-    patient_user_id: userId
-  });
-  
-  if (funcError) {
-    console.error('Error generating QR code text:', funcError);
-    throw funcError;
-  }
-  
-  console.log('Generated QR code text:', qrCodeText);
-  
-  const { data, error } = await supabase
-    .from('qr_codes')
-    .insert({
+    // Marquer tous les anciens QR codes comme expirés pour cet utilisateur
+    console.log('🔄 Expiration des anciens QR codes...');
+    const { error: expireError } = await supabase
+      .from('qr_codes')
+      .update({ status: 'expired' })
+      .eq('user_id', userId)
+      .eq('status', 'active');
+
+    if (expireError) {
+      console.error('⚠️ Erreur lors de l\'expiration des anciens codes:', expireError);
+    } else {
+      console.log('✅ Anciens QR codes expirés');
+    }
+
+    // Générer un nouveau code QR unique
+    console.log('🔄 Génération du code QR...');
+    const { data: qrCodeText, error: funcError } = await supabase.rpc('generate_qr_code', {
+      patient_user_id: userId
+    });
+    
+    if (funcError) {
+      console.error('❌ Erreur fonction generate_qr_code:', funcError);
+      throw new Error(`Erreur de génération: ${funcError.message}`);
+    }
+    
+    console.log('✅ Code QR généré:', qrCodeText);
+    
+    // Créer l'enregistrement QR code
+    const qrCodeData = {
       user_id: userId,
       qr_code: qrCodeText,
       access_key: qrCodeText, // Utiliser le même code pour l'access_key
-      status: 'active',
+      status: 'active' as const,
       expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 an
-    })
-    .select()
-    .single();
+    };
+
+    console.log('🔄 Insertion du QR code dans la base:', qrCodeData);
     
-  if (error) {
-    console.error('Error creating QR code record:', error);
+    const { data: newQrCode, error: insertError } = await supabase
+      .from('qr_codes')
+      .insert(qrCodeData)
+      .select()
+      .single();
+      
+    if (insertError) {
+      console.error('❌ Erreur insertion QR code:', insertError);
+      throw new Error(`Impossible de créer le QR code: ${insertError.message}`);
+    }
+    
+    console.log('✅ QR code créé avec succès:', newQrCode);
+    
+    return {
+      ...newQrCode,
+      status: (newQrCode.status ?? 'active') as 'active' | 'expired' | 'used',
+    };
+    
+  } catch (error) {
+    console.error('❌ Erreur complète génération QR:', error);
     throw error;
   }
-  
-  console.log('QR code created successfully:', data);
-  return {
-    ...data,
-    status: (data.status ?? 'active') as 'active' | 'expired' | 'used',
-  };
 };
 
 export const getQRCodesForUser = async (userId: string): Promise<QRCode[]> => {

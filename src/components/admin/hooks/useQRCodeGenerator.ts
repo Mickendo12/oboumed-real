@@ -32,16 +32,16 @@ export const useQRCodeGenerator = () => {
   const loadProfiles = async () => {
     try {
       setLoadingProfiles(true);
-      console.log('Loading profiles for QR generator...');
+      console.log('🔄 Chargement des profils pour générateur QR...');
       const allProfiles = await getAllProfiles();
-      console.log('Profiles loaded for QR generator:', allProfiles);
+      console.log('✅ Profils chargés:', allProfiles.length, 'profils');
       setProfiles(allProfiles);
     } catch (error) {
-      console.error('Error loading profiles:', error);
+      console.error('❌ Erreur chargement profils:', error);
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Impossible de charger les profils utilisateurs."
+        description: `Impossible de charger les profils: ${error.message || 'Erreur inconnue'}`
       });
     } finally {
       setLoadingProfiles(false);
@@ -52,16 +52,16 @@ export const useQRCodeGenerator = () => {
     if (!selectedUserId) return;
     
     try {
-      console.log('Loading QR codes for user:', selectedUserId);
+      console.log('🔄 Chargement codes QR pour utilisateur:', selectedUserId);
       const userQrCodes = await getQRCodesForUser(selectedUserId);
-      console.log('QR codes loaded:', userQrCodes);
+      console.log('✅ Codes QR chargés:', userQrCodes.length, 'codes');
       setQrCodes(userQrCodes);
     } catch (error) {
-      console.error('Error loading QR codes:', error);
+      console.error('❌ Erreur chargement codes QR:', error);
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Impossible de charger les codes QR."
+        description: `Impossible de charger les codes QR: ${error.message || 'Erreur inconnue'}`
       });
     }
   };
@@ -76,23 +76,35 @@ export const useQRCodeGenerator = () => {
       return;
     }
 
+    const selectedProfile = profiles.find(p => p.user_id === selectedUserId);
+    const userName = selectedProfile?.name || selectedProfile?.email || 'Utilisateur inconnu';
+
     try {
       setLoading(true);
-      console.log('Generating QR code for user:', selectedUserId);
+      console.log('🔄 Génération QR code pour:', userName, '(ID:', selectedUserId, ')');
+      
+      toast({
+        title: "Génération en cours",
+        description: `Génération du code QR pour ${userName}...`
+      });
+
       const qrCode = await generateQRCodeForUser(selectedUserId);
-      console.log('QR code generated:', qrCode);
+      console.log('✅ Code QR généré avec succès:', qrCode);
+      
+      // Recharger les codes QR pour afficher le nouveau
       await loadQRCodes();
       
       toast({
-        title: "Code QR généré",
-        description: "Le code QR et la clé d'accès ont été générés avec succès."
+        title: "Succès",
+        description: `Code QR et clé d'accès générés pour ${userName}`
       });
+      
     } catch (error) {
-      console.error('Error generating QR code:', error);
+      console.error('❌ Erreur génération QR code:', error);
       toast({
         variant: "destructive",
-        title: "Erreur",
-        description: "Impossible de générer le code QR."
+        title: "Erreur de génération",
+        description: `Impossible de générer le code QR pour ${userName}: ${error.message || 'Erreur inconnue'}`
       });
     } finally {
       setLoading(false);
@@ -107,12 +119,26 @@ export const useQRCodeGenerator = () => {
         description: `${type} copié dans le presse-papiers.`
       });
     } catch (error) {
-      console.error('Error copying to clipboard:', error);
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Impossible de copier le texte."
-      });
+      console.error('❌ Erreur copie presse-papiers:', error);
+      // Fallback pour les navigateurs qui ne supportent pas l'API clipboard
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        toast({
+          title: "Copié",
+          description: `${type} copié dans le presse-papiers.`
+        });
+      } catch (fallbackError) {
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Impossible de copier le texte."
+        });
+      }
+      document.body.removeChild(textArea);
     }
   };
 
@@ -129,6 +155,8 @@ export const useQRCodeGenerator = () => {
     selectedProfile,
     activeQrCode,
     handleGenerateQR,
-    copyToClipboard
+    copyToClipboard,
+    loadProfiles,
+    loadQRCodes
   };
 };
