@@ -22,46 +22,53 @@ const QRCodeGenerator: React.FC = () => {
     loadProfiles
   } = useQRCodeGenerator();
 
+  console.log('QRCodeGenerator render - profiles:', profiles.length, 'selectedUserId:', selectedUserId, 'activeQrCode:', !!activeQrCode);
+
   if (loadingProfiles) {
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-gray-300 rounded w-1/4"></div>
-            <div className="h-10 bg-gray-300 rounded"></div>
-            <div className="h-4 bg-gray-300 rounded w-3/4"></div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="animate-pulse space-y-4">
+              <div className="h-4 bg-gray-300 rounded w-1/4"></div>
+              <div className="h-10 bg-gray-300 rounded"></div>
+              <div className="h-4 bg-gray-300 rounded w-3/4"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   if (profiles.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <QrCode size={20} />
-            Génération de codes QR et clés d'accès
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-2 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-            <AlertCircle size={16} className="text-yellow-600" />
-            <p className="text-sm text-yellow-800 dark:text-yellow-200">
-              Aucun profil utilisateur trouvé. Vérifiez que des utilisateurs sont enregistrés.
-            </p>
-          </div>
-          <Button 
-            onClick={loadProfiles}
-            variant="outline"
-            className="w-full"
-          >
-            <RefreshCw size={16} className="mr-2" />
-            Actualiser les profils
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <QrCode size={20} />
+              Génération de codes QR et clés d'accès
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-2 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+              <AlertCircle size={16} className="text-yellow-600" />
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                Aucun profil utilisateur trouvé. Vérifiez que des utilisateurs sont enregistrés.
+              </p>
+            </div>
+            <Button 
+              onClick={loadProfiles}
+              variant="outline"
+              className="w-full"
+              disabled={loadingProfiles}
+            >
+              <RefreshCw size={16} className={`mr-2 ${loadingProfiles ? 'animate-spin' : ''}`} />
+              Actualiser les profils
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 

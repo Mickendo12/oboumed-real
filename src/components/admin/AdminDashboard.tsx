@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Activity } from 'lucide-react';
+import { Users, Activity, QrCode } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import UserList from './components/UserList';
 import AccessLogsList from './components/AccessLogsList';
+import QRCodeGenerator from './QRCodeGenerator';
 import { 
   getAllProfiles, 
   getAccessLogs, 
@@ -145,6 +146,10 @@ const AdminDashboard: React.FC = () => {
             <Users size={16} className="mr-2" />
             Utilisateurs
           </TabsTrigger>
+          <TabsTrigger value="qrcodes">
+            <QrCode size={16} className="mr-2" />
+            Codes QR
+          </TabsTrigger>
           <TabsTrigger value="logs">
             <Activity size={16} className="mr-2" />
             Logs d'accès
@@ -159,6 +164,10 @@ const AdminDashboard: React.FC = () => {
             onGenerateQRAndKey={handleGenerateQRAndKey}
             onGrantDoctorAccess={handleGrantDoctorAccess}
           />
+        </TabsContent>
+
+        <TabsContent value="qrcodes">
+          <QRCodeGenerator />
         </TabsContent>
 
         <TabsContent value="logs">

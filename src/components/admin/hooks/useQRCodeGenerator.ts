@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { 
   getAllProfiles, 
@@ -17,19 +17,7 @@ export const useQRCodeGenerator = () => {
   const [loadingProfiles, setLoadingProfiles] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadProfiles();
-  }, []);
-
-  useEffect(() => {
-    if (selectedUserId) {
-      loadQRCodes();
-    } else {
-      setQrCodes([]);
-    }
-  }, [selectedUserId]);
-
-  const loadProfiles = async () => {
+  const loadProfiles = useCallback(async () => {
     try {
       setLoadingProfiles(true);
       console.log('🔄 Chargement des profils pour générateur QR...');
@@ -46,9 +34,9 @@ export const useQRCodeGenerator = () => {
     } finally {
       setLoadingProfiles(false);
     }
-  };
+  }, [toast]);
 
-  const loadQRCodes = async () => {
+  const loadQRCodes = useCallback(async () => {
     if (!selectedUserId) return;
     
     try {
@@ -64,9 +52,9 @@ export const useQRCodeGenerator = () => {
         description: `Impossible de charger les codes QR: ${error.message || 'Erreur inconnue'}`
       });
     }
-  };
+  }, [selectedUserId, toast]);
 
-  const handleGenerateQR = async () => {
+  const handleGenerateQR = useCallback(async () => {
     if (!selectedUserId) {
       toast({
         variant: "destructive",
@@ -109,9 +97,9 @@ export const useQRCodeGenerator = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedUserId, profiles, toast, loadQRCodes]);
 
-  const copyToClipboard = async (text: string, type: string) => {
+  const copyToClipboard = useCallback(async (text: string, type: string) => {
     try {
       await navigator.clipboard.writeText(text);
       toast({
@@ -140,7 +128,19 @@ export const useQRCodeGenerator = () => {
       }
       document.body.removeChild(textArea);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    loadProfiles();
+  }, [loadProfiles]);
+
+  useEffect(() => {
+    if (selectedUserId) {
+      loadQRCodes();
+    } else {
+      setQrCodes([]);
+    }
+  }, [selectedUserId, loadQRCodes]);
 
   const selectedProfile = profiles.find(p => p.user_id === selectedUserId);
   const activeQrCode = qrCodes.find(qr => qr.status === 'active');
