@@ -39,7 +39,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ value, size = 200 }) => {
       <img 
         src={qrCodeUrl} 
         alt="QR Code" 
-        className="rounded-lg border"
+        className="rounded-lg"
         style={{ width: size, height: size }}
       />
     </div>
