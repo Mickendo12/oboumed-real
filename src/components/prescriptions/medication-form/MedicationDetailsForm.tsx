@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Plus, X } from 'lucide-react';
 import MedicationAutocomplete from '../medication-autocomplete/MedicationAutocomplete';
+import DosageSelector from './DosageSelector';
 
 interface MedicationDetails {
   id: string;
@@ -86,36 +87,32 @@ const MedicationDetailsForm: React.FC<MedicationDetailsFormProps> = ({ onAddMedi
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="medication-search">Rechercher un médicament</Label>
+          <Label htmlFor="medication-search">Rechercher ou saisir un médicament</Label>
           <MedicationAutocomplete
             value={selectedMedicationName}
             onSelect={handleMedicationSelect}
-            placeholder="Rechercher ou saisir un médicament..."
+            placeholder="Rechercher, saisir manuellement ou ajouter un nouveau médicament..."
           />
         </div>
 
         {isFormVisible && (
           <form onSubmit={handleSubmit} className="space-y-4 border-t pt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="dosage">Dosage</Label>
-                <Input
-                  id="dosage"
-                  value={dosage}
-                  onChange={(e) => setDosage(e.target.value)}
-                  placeholder="ex: 500mg, 1 comprimé"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="frequency">Fréquence</Label>
-                <Input
-                  id="frequency"
-                  value={frequency}
-                  onChange={(e) => setFrequency(e.target.value)}
-                  placeholder="ex: 3 fois par jour"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="dosage">Dosage</Label>
+              <DosageSelector
+                value={dosage}
+                onChange={setDosage}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="frequency">Fréquence</Label>
+              <Input
+                id="frequency"
+                value={frequency}
+                onChange={(e) => setFrequency(e.target.value)}
+                placeholder="ex: 3 fois par jour, matin et soir"
+              />
             </div>
 
             <div className="space-y-2">

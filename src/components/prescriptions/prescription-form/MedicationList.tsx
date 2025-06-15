@@ -2,6 +2,8 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Trash2 } from 'lucide-react';
 
 interface Medication {
   id: string;
@@ -15,9 +17,15 @@ interface Medication {
 
 interface MedicationListProps {
   medications: Medication[];
+  onRemoveMedication?: (medicationId: string) => void;
+  showDeleteButtons?: boolean;
 }
 
-const MedicationList: React.FC<MedicationListProps> = ({ medications }) => {
+const MedicationList: React.FC<MedicationListProps> = ({ 
+  medications, 
+  onRemoveMedication, 
+  showDeleteButtons = false 
+}) => {
   if (medications.length === 0) {
     return (
       <p className="text-sm text-muted-foreground text-center py-8">
@@ -34,9 +42,21 @@ const MedicationList: React.FC<MedicationListProps> = ({ medications }) => {
             <div className="space-y-2">
               <div className="flex items-start justify-between">
                 <h4 className="font-semibold text-lg">{med.name}</h4>
-                {med.treatment_duration && (
-                  <Badge variant="secondary">{med.treatment_duration}</Badge>
-                )}
+                <div className="flex items-center gap-2">
+                  {med.treatment_duration && (
+                    <Badge variant="secondary">{med.treatment_duration}</Badge>
+                  )}
+                  {showDeleteButtons && onRemoveMedication && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => onRemoveMedication(med.id)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 size={14} />
+                    </Button>
+                  )}
+                </div>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">

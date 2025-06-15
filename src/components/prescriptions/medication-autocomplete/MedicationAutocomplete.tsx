@@ -165,6 +165,20 @@ const MedicationAutocomplete: React.FC<MedicationAutocompleteProps> = ({
     setSearchValue("");
   };
 
+  const handleManualEntry = () => {
+    if (searchValue.trim()) {
+      const manualMedication: Medication = {
+        id: `manual_${Date.now()}`,
+        name: searchValue.trim(),
+        dosage: "",
+        form: "Saisie manuelle"
+      };
+      onSelect(manualMedication);
+      setOpen(false);
+      setSearchValue("");
+    }
+  };
+
   const showAddButton = searchValue.length > 2 && 
     !medications.some(med => med.name.toLowerCase() === searchValue.toLowerCase()) &&
     !loading;
@@ -185,7 +199,7 @@ const MedicationAutocomplete: React.FC<MedicationAutocompleteProps> = ({
       <PopoverContent className="w-full p-0">
         <Command>
           <CommandInput 
-            placeholder="Tapez pour rechercher..." 
+            placeholder="Tapez pour rechercher ou saisir manuellement..." 
             value={searchValue}
             onValueChange={setSearchValue}
           />
@@ -233,10 +247,14 @@ const MedicationAutocomplete: React.FC<MedicationAutocompleteProps> = ({
               </CommandGroup>
             )}
             {showAddButton && (
-              <CommandGroup heading="Nouveau médicament">
+              <CommandGroup heading="Ajouter">
                 <CommandItem onSelect={handleAddNewMedication}>
                   <Plus className="mr-2 h-4 w-4" />
-                  <span>Ajouter "{searchValue}"</span>
+                  <span>Ajouter "{searchValue}" à la base</span>
+                </CommandItem>
+                <CommandItem onSelect={handleManualEntry}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  <span>Saisir "{searchValue}" manuellement</span>
                 </CommandItem>
               </CommandGroup>
             )}

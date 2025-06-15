@@ -6,9 +6,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { createPrescriptionWithMedications, uploadPrescriptionImage } from '@/services/prescriptionService';
 import PrescriptionDetails from './prescription-form/PrescriptionDetails';
 import MedicationList from './prescription-form/MedicationList';
-import PrescriptionScanner from './prescription-form/PrescriptionScanner';
 import MedicationDetailsForm from './medication-form/MedicationDetailsForm';
-import { Medication, OcrResult } from './prescription-form/types';
+import { Medication } from './prescription-form/types';
 
 interface NewPrescriptionFormProps {
   onComplete: () => void;
@@ -25,10 +24,6 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
   );
   const [medications, setMedications] = useState<Medication[]>([]);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [prescriptionImage, setPrescriptionImage] = useState<string | undefined>();
-  const [imageUrl, setImageUrl] = useState<string | undefined>();
-  const [imageStoragePath, setImageStoragePath] = useState<string | undefined>();
   const { toast } = useToast();
 
   const handleDetailsSubmit = (e: React.FormEvent) => {
@@ -44,24 +39,23 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
     });
   };
 
+  const handleRemoveMedication = (medicationId: string) => {
+    setMedications(medications.filter(med => med.id !== medicationId));
+    toast({
+      title: "Médicament supprimé",
+      description: "Le médicament a été retiré de l'ordonnance.",
+    });
+  };
+
   const handleSavePrescription = async () => {
     try {
       setSaving(true);
-      
-      let uploadResult = { url: '', path: '' };
-      if (prescriptionImage) {
-        setUploading(true);
-        uploadResult = await uploadPrescriptionImage(prescriptionImage, userId);
-        setUploading(false);
-      }
       
       const prescriptionData = {
         hospitalName: hospitalName || undefined,
         doctorName: doctorName || undefined,
         pharmacyName: pharmacyName || undefined,
         prescriptionDate: prescriptionDate || undefined,
-        imageUrl: uploadResult.url || imageUrl || undefined,
-        imageStoragePath: uploadResult.path || imageStoragePath || undefined,
         userId,
       };
 
@@ -92,37 +86,7 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
       });
     } finally {
       setSaving(false);
-      setUploading(false);
     }
-  };
-
-  const handlePrescriptionScan = async (result: OcrResult, imageData: string) => {
-    if (result.hospitalName) setHospitalName(result.hospitalName);
-    if (result.doctorName) setDoctorName(result.doctorName);
-    if (result.prescriptionDate) setPrescriptionDate(result.prescriptionDate);
-    
-    setPrescriptionImage(imageData);
-    
-    try {
-      setUploading(true);
-      const { url, path } = await uploadPrescriptionImage(imageData, userId);
-      if (url) {
-        setImageUrl(url);
-        setImageStoragePath(path);
-      }
-    } catch (error) {
-      console.error("Erreur lors du téléversement de l'image:", error);
-      toast({
-        variant: "destructive",
-        title: "Erreur de téléversement",
-        description: "L'image n'a pas pu être téléversée. Vous pourrez réessayer lors de l'enregistrement."
-      });
-    } finally {
-      setUploading(false);
-    }
-    
-    setMedications(prevMeds => [...prevMeds, ...result.medications]);
-    setStep('medications');
   };
 
   return (
@@ -137,44 +101,33 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
       
       <CardContent>
         {step === 'details' ? (
-          <div className="space-y-6">
-            <PrescriptionScanner onScanComplete={handlePrescriptionScan} />
+          <form onSubmit={handleDetailsSubmit} className="space-y-4">
+            <PrescriptionDetails 
+              hospitalName={hospitalName}
+              setHospitalName={setHospitalName}
+              doctorName={doctorName}
+              setDoctorName={setDoctorName}
+              prescriptionDate={prescriptionDate}
+              setPrescriptionDate={setPrescriptionDate}
+              pharmacyName={pharmacyName}
+              setPharmacyName={setPharmacyName}
+            />
             
-            <form onSubmit={handleDetailsSubmit} className="space-y-4 pt-4 border-t">
-              <PrescriptionDetails 
-                hospitalName={hospitalName}
-                setHospitalName={setHospitalName}
-                doctorName={doctorName}
-                setDoctorName={setDoctorName}
-                prescriptionDate={prescriptionDate}
-                setPrescriptionDate={setPrescriptionDate}
-                pharmacyName={pharmacyName}
-                setPharmacyName={setPharmacyName}
-              />
-              
-              <Button type="submit" className="w-full">
-                Continuer
-              </Button>
-            </form>
-          </div>
+            <Button type="submit" className="w-full">
+              Continuer
+            </Button>
+          </form>
         ) : (
           <div className="space-y-6">
-            {(prescriptionImage || imageUrl) && (
-              <div className="p-2 border rounded-lg">
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Image de l'ordonnance</h3>
-                <img 
-                  src={imageUrl || prescriptionImage} 
-                  alt="Ordonnance scannée" 
-                  className="w-full h-48 object-contain border rounded bg-muted/20" 
-                />
-              </div>
-            )}
-            
             <MedicationDetailsForm onAddMedication={handleAddMedication} />
             
             <div className="space-y-4 border-t pt-4">
               <h3 className="font-medium">Médicaments ajoutés ({medications.length})</h3>
-              <MedicationList medications={medications} />
+              <MedicationList 
+                medications={medications} 
+                onRemoveMedication={handleRemoveMedication}
+                showDeleteButtons={true}
+              />
             </div>
           </div>
         )}
@@ -187,9 +140,9 @@ const NewPrescriptionForm: React.FC<NewPrescriptionFormProps> = ({ onComplete, u
           </Button>
           <Button 
             onClick={handleSavePrescription}
-            disabled={medications.length === 0 || saving || uploading}
+            disabled={medications.length === 0 || saving}
           >
-            {saving || uploading ? "Enregistrement..." : "Enregistrer l'ordonnance"}
+            {saving ? "Enregistrement..." : "Enregistrer l'ordonnance"}
           </Button>
         </CardFooter>
       )}
