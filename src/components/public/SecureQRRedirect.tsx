@@ -25,7 +25,7 @@ const SecureQRRedirect: React.FC = () => {
   }, [qrCode]);
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 lovable-hide-badge">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-center">
