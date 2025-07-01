@@ -1,10 +1,10 @@
+
 import React, { useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { QrCode, Copy, CheckCircle, Download } from 'lucide-react';
 import QRCodeDisplay from '../QRCodeDisplay';
 import { QRCode } from '@/services/supabaseService';
-import { generateSecureQRUrl } from '@/utils/encryption';
 
 interface QRCodeCardProps {
   qrCode: QRCode;
@@ -15,7 +15,8 @@ interface QRCodeCardProps {
 
 const QRCodeCard: React.FC<QRCodeCardProps> = ({ qrCode, userName, userEmail, onCopy }) => {
   const qrCardRef = useRef<HTMLDivElement>(null);
-  const secureUrl = generateSecureQRUrl(qrCode.qr_code);
+  // Utiliser directement la valeur du QR code qui est maintenant chiffrée
+  const secureUrl = `${window.location.origin}/qr/${qrCode.qr_code}`;
 
   const downloadQRCode = async () => {
     if (!qrCardRef.current) return;

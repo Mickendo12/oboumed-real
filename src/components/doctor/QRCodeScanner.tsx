@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,6 +27,22 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
       stopScanning();
     };
   }, []);
+
+  const extractQRCodeFromUrl = (url: string): string => {
+    console.log('🔍 Extracting QR code from URL:', url);
+    
+    // Chercher le pattern /qr/[code] dans l'URL
+    const qrMatch = url.match(/\/qr\/([^\/\?#]+)/);
+    if (qrMatch && qrMatch[1]) {
+      const extractedCode = qrMatch[1];
+      console.log('✅ QR code extracted from URL:', extractedCode);
+      return extractedCode;
+    }
+    
+    // Si pas de pattern trouvé, retourner l'URL telle quelle
+    console.log('⚠️ No QR pattern found, using full URL');
+    return url;
+  };
 
   const takePictureWithCapacitor = async () => {
     try {
@@ -87,8 +102,9 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
         const code = jsQR(imageData.data, imageData.width, imageData.height);
         
         if (code) {
-          console.log('QR Code détecté:', code.data);
-          handleQRCodeDetected(code.data);
+          console.log('🔍 QR Code détecté depuis image:', code.data);
+          const qrCodeValue = extractQRCodeFromUrl(code.data);
+          handleQRCodeDetected(qrCodeValue);
         } else {
           toast({
             variant: "destructive",
@@ -174,8 +190,9 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
     const code = jsQR(imageData.data, imageData.width, imageData.height);
 
     if (code) {
-      console.log('QR Code détecté:', code.data);
-      handleQRCodeDetected(code.data);
+      console.log('🔍 QR Code détecté depuis caméra:', code.data);
+      const qrCodeValue = extractQRCodeFromUrl(code.data);
+      handleQRCodeDetected(qrCodeValue);
     }
   };
 
@@ -195,7 +212,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
         toast({
           variant: "destructive",
           title: "QR Code invalide",
-          description: "Ce QR code n'est pas valide ou a expiré."
+          description: validation.error || "Ce QR code n'est pas valide ou a expiré."
         });
         return;
       }

@@ -2,7 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ReminderDB, ReminderInput } from '@/types/reminder';
 import { decodeQRKey } from '@/utils/urlEncryption';
 import { securityService } from './securityService';
-import { decryptQRCode } from '@/utils/encryption';
+import { encryptQRCode, decryptQRCode } from '@/utils/encryption';
 
 export interface Profile {
   id: string;
@@ -285,18 +285,21 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
       console.log('✅ Old QR codes expired');
     }
 
-    // Generate unique QR code and access key
+    // Generate unique QR code and access key - MAINTENANT CHIFFRÉ
     const timestamp = Date.now().toString();
     const randomPart = Math.random().toString(36).substring(2, 15);
-    const qrCodeValue = `${timestamp}-${randomPart}`;
+    const rawQrCodeValue = `${timestamp}-${randomPart}`;
+    
+    // CHIFFRER le QR code avant stockage
+    const encryptedQrCode = encryptQRCode(rawQrCodeValue);
     const accessKey = `${randomPart}-${timestamp}`;
     
-    console.log('🔄 Generated codes - QR:', qrCodeValue, 'Key:', accessKey);
+    console.log('🔄 Generated codes - Raw QR:', rawQrCodeValue, 'Encrypted QR:', encryptedQrCode, 'Key:', accessKey);
     
-    // Create new QR code record
+    // Create new QR code record avec la valeur chiffrée
     const qrCodeData = {
       user_id: userId,
-      qr_code: qrCodeValue,
+      qr_code: rawQrCodeValue, // Stocker la valeur non chiffrée pour la validation
       access_key: accessKey,
       status: 'active' as const,
       expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year
@@ -320,6 +323,7 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
     
     return {
       ...newQrCode,
+      qr_code: encryptedQrCode, // Retourner la version chiffrée pour l'affichage
       status: (newQrCode.status ?? 'active') as 'active' | 'expired' | 'used',
     };
     
@@ -357,44 +361,73 @@ export const validateQRCode = async (qrCodeData: string): Promise<{
   error?: string;
 }> => {
   try {
-    console.log('🔄 Validating QR code with new encryption...');
+    console.log('🔄 Validating QR code with unified logic...');
+    console.log('🔍 Received QR data:', qrCodeData);
     
-    // Essayer de déchiffrer avec le nouveau système
-    const decryptedCode = decryptQRCode(qrCodeData);
+    let decryptedCode: string | null = null;
     
+    // Essayer de déchiffrer avec le nouveau système d'abord
+    try {
+      decryptedCode = decryptQRCode(qrCodeData);
+      console.log('✅ QR code decrypted with new system:', decryptedCode ? 'success' : 'failed');
+    } catch (error) {
+      console.log('⚠️ New decryption failed, trying old system...');
+    }
+    
+    // Si le nouveau système échoue, essayer l'ancien
     if (!decryptedCode) {
-      console.log('❌ Failed to decrypt QR code');
+      try {
+        decryptedCode = decodeQRKey(qrCodeData);
+        console.log('✅ QR code decrypted with legacy system:', decryptedCode ? 'success' : 'failed');
+      } catch (error) {
+        console.log('⚠️ Legacy decryption also failed');
+      }
+    }
+    
+    // Si les deux systèmes échouent, essayer une validation directe
+    if (!decryptedCode) {
+      console.log('🔄 Trying direct validation without decryption...');
+      decryptedCode = qrCodeData;
+    }
+
+    if (!decryptedCode) {
+      console.log('❌ All decryption methods failed');
       return { valid: false, error: 'QR code invalide ou corrompu' };
     }
 
-    console.log('✅ QR code decrypted successfully');
+    console.log('🔄 Using decrypted code for validation:', decryptedCode);
 
-    // Validation via edge function
-    const { data, error } = await supabase.functions.invoke('validate-qr-access', {
-      body: { qrCode: decryptedCode }
-    });
+    // Validation directe dans la base de données
+    const { data: qrCodeRecord, error: dbError } = await supabase
+      .from('qr_codes')
+      .select('id, user_id, status, expires_at')
+      .eq('qr_code', decryptedCode)
+      .eq('status', 'active')
+      .single();
 
-    if (error) {
-      console.error('❌ Edge function error:', error);
-      return { valid: false, error: error.message };
-    }
-
-    if (!data.userId) {
+    if (dbError || !qrCodeRecord) {
+      console.log('❌ QR code not found in database:', dbError);
       return { valid: false, error: 'QR code invalide ou expiré' };
     }
 
-    // Récupérer l'ID du QR code pour les logs
-    const { data: qrCodeRecord } = await supabase
-      .from('qr_codes')
-      .select('id')
-      .eq('qr_code', decryptedCode)
-      .single();
+    // Check if QR code is expired
+    const isExpired = new Date(qrCodeRecord.expires_at) < new Date();
+    if (isExpired) {
+      console.log('❌ QR code expired');
+      return { valid: false, error: 'QR code expiré' };
+    }
+
+    console.log('✅ QR code validation successful:', {
+      userId: qrCodeRecord.user_id,
+      qrCodeId: qrCodeRecord.id
+    });
 
     return {
       valid: true,
-      userId: data.userId,
-      qrCodeId: qrCodeRecord?.id
+      userId: qrCodeRecord.user_id,
+      qrCodeId: qrCodeRecord.id
     };
+
   } catch (error: any) {
     console.error('❌ Error validating QR code:', error);
     return { valid: false, error: error.message };
