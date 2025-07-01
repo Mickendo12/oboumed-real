@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Camera, X, Scan } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { validateQRCode, getUserProfile, createDoctorSession } from '@/services/supabaseService';
+import { validateQRCode, getUserProfile, createDoctorSession, logAccess } from '@/services/supabaseService';
 import jsQR from 'jsqr';
 
 interface QRCodeScannerProps {
@@ -139,10 +139,36 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
 
       console.log('🔄 Processing QR code:', qrCodeData);
 
+      // Log de tentative de scan
+      await logAccess({
+        patient_id: 'unknown', // Sera mis à jour après validation
+        doctor_id: doctorId,
+        action: 'qr_scan_attempt',
+        details: {
+          qr_code_data: qrCodeData,
+          timestamp: new Date().toISOString(),
+          method: 'camera_scan'
+        },
+        ip_address: 'camera_scan'
+      });
+
       const validation = await validateQRCode(qrCodeData);
       console.log('✅ QR code validation result:', validation);
 
       if (!validation.valid || !validation.userId) {
+        // Log d'échec de validation
+        await logAccess({
+          patient_id: 'unknown',
+          doctor_id: doctorId,
+          action: 'qr_scan_failed',
+          details: {
+            error: validation.error || 'QR code invalide',
+            qr_code_data: qrCodeData,
+            timestamp: new Date().toISOString()
+          },
+          ip_address: 'camera_scan'
+        });
+
         toast({
           variant: "destructive",
           title: "QR Code invalide",
@@ -155,6 +181,19 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
       console.log('✅ Patient profile retrieved:', profile);
 
       if (!profile) {
+        // Log d'échec de récupération du profil
+        await logAccess({
+          patient_id: validation.userId,
+          doctor_id: doctorId,
+          action: 'profile_fetch_failed',
+          details: {
+            error: 'Patient profile not found',
+            patient_id: validation.userId,
+            timestamp: new Date().toISOString()
+          },
+          ip_address: 'camera_scan'
+        });
+
         toast({
           variant: "destructive",
           title: "Patient introuvable",
@@ -164,6 +203,19 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
       }
 
       if (profile.access_status === 'restricted') {
+        // Log d'accès restreint
+        await logAccess({
+          patient_id: validation.userId,
+          doctor_id: doctorId,
+          action: 'access_restricted',
+          details: {
+            patient_name: profile.name || profile.email,
+            access_status: profile.access_status,
+            timestamp: new Date().toISOString()
+          },
+          ip_address: 'camera_scan'
+        });
+
         toast({
           variant: "destructive",
           title: "Accès restreint",
@@ -175,6 +227,22 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
       console.log('🔄 Creating doctor session...');
       const session = await createDoctorSession(validation.userId, doctorId, validation.qrCodeId);
       console.log('✅ Doctor session created:', session);
+
+      // Log de succès d'accès
+      await logAccess({
+        patient_id: validation.userId,
+        doctor_id: doctorId,
+        action: 'qr_access_granted',
+        details: {
+          patient_name: profile.name || profile.email,
+          session_id: session.id,
+          qr_code_id: validation.qrCodeId,
+          access_method: 'qr_scan',
+          session_duration: '30_minutes',
+          timestamp: new Date().toISOString()
+        },
+        ip_address: 'camera_scan'
+      });
 
       const patientData = {
         profile: {
@@ -196,6 +264,20 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
 
     } catch (error: any) {
       console.error('❌ Error processing QR code:', error);
+      
+      // Log d'erreur système
+      await logAccess({
+        patient_id: 'unknown',
+        doctor_id: doctorId,
+        action: 'qr_scan_error',
+        details: {
+          error: error?.message || 'Erreur inconnue',
+          qr_code_data: qrCodeData,
+          timestamp: new Date().toISOString()
+        },
+        ip_address: 'camera_scan'
+      });
+
       toast({
         variant: "destructive",
         title: "Erreur de scan",
