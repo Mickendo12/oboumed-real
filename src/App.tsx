@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -11,10 +10,14 @@ import DataConfig from "./pages/DataConfig";
 import NotFound from "./pages/NotFound";
 import PublicPatientProfile from '@/components/public/PublicPatientProfile';
 import SecureQRRedirect from '@/components/public/SecureQRRedirect';
+import { useBackButton } from './hooks/useBackButton';
 
 const queryClient = new QueryClient();
 
 function App() {
+  // Gérer le bouton retour mobile
+  useBackButton();
+
   return (
     <QueryClientProvider client={queryClient}>
       <Router>

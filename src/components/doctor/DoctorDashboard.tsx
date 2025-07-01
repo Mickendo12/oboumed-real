@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +12,7 @@ import {
   logAccess,
   DoctorAccessSession 
 } from '@/services/supabaseService';
+import { useMobileNavigation } from '@/hooks/useMobileNavigation';
 
 interface DoctorDashboardProps {
   userId: string;
@@ -24,6 +24,16 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ userId }) => {
   const [loading, setLoading] = useState(true);
   const [sessionCountdowns, setSessionCountdowns] = useState<{ [sessionId: string]: string }>({});
   const { toast } = useToast();
+
+  // Gérer la navigation mobile
+  useMobileNavigation({
+    onBackPress: () => {
+      if (selectedPatientId) {
+        setSelectedPatientId(null);
+      }
+    },
+    canGoBack: !!selectedPatientId
+  });
 
   useEffect(() => {
     loadActiveSessions();

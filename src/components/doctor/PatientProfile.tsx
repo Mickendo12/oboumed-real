@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +19,7 @@ import {
 import { getPrescriptionsForUser, PrescriptionWithMedications } from '@/services/prescriptionService';
 import { ReminderDB } from '@/types/reminder';
 import PrescriptionsList from './PrescriptionsList';
+import { useMobileNavigation } from '@/hooks/useMobileNavigation';
 
 interface PatientProfileProps {
   patientId: string;
@@ -42,6 +42,12 @@ const PatientProfile: React.FC<PatientProfileProps> = ({
   const [sessionValid, setSessionValid] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'prescriptions'>('overview');
   const { toast } = useToast();
+
+  // Gérer la navigation mobile
+  useMobileNavigation({
+    onBackPress: onBack,
+    canGoBack: true
+  });
 
   useEffect(() => {
     loadPatientData();
