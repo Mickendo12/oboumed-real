@@ -1,4 +1,3 @@
-
 import React, { useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,7 @@ interface QRCodeCardProps {
 
 const QRCodeCard: React.FC<QRCodeCardProps> = ({ qrCode, userName, userEmail, onCopy }) => {
   const qrCardRef = useRef<HTMLDivElement>(null);
-  // Utiliser directement la valeur du QR code qui est maintenant chiffrée
+  // Utiliser directement la valeur du QR code qui est maintenant chiffrée pour l'URL
   const secureUrl = `${window.location.origin}/qr/${qrCode.qr_code}`;
 
   const downloadQRCode = async () => {
@@ -77,9 +76,6 @@ const QRCodeCard: React.FC<QRCodeCardProps> = ({ qrCode, userName, userEmail, on
               </div>
               <div className="text-[8px] text-gray-600">
                 Dossier Médical - ObouMed
-              </div>
-              <div className="text-[7px] font-mono text-gray-800 break-all mt-0.5">
-                {qrCode.access_key}
               </div>
             </div>
           </div>

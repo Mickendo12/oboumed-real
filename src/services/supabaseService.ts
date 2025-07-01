@@ -285,22 +285,18 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
       console.log('✅ Old QR codes expired');
     }
 
-    // Generate unique QR code and access key - MAINTENANT CHIFFRÉ
+    // Generate unique code that will be used for BOTH QR code and access key
     const timestamp = Date.now().toString();
     const randomPart = Math.random().toString(36).substring(2, 15);
-    const rawQrCodeValue = `${timestamp}-${randomPart}`;
+    const uniqueCode = `${timestamp}-${randomPart}`;
     
-    // CHIFFRER le QR code avant stockage
-    const encryptedQrCode = encryptQRCode(rawQrCodeValue);
-    const accessKey = `${randomPart}-${timestamp}`;
+    console.log('🔄 Generated unique code:', uniqueCode);
     
-    console.log('🔄 Generated codes - Raw QR:', rawQrCodeValue, 'Encrypted QR:', encryptedQrCode, 'Key:', accessKey);
-    
-    // Create new QR code record avec la valeur chiffrée
+    // Create new QR code record - use the same value for both qr_code and access_key
     const qrCodeData = {
       user_id: userId,
-      qr_code: rawQrCodeValue, // Stocker la valeur non chiffrée pour la validation
-      access_key: accessKey,
+      qr_code: uniqueCode, // Stocker la valeur directe
+      access_key: uniqueCode, // La même valeur pour la clé d'accès
       status: 'active' as const,
       expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year
       created_by: userId
@@ -321,9 +317,12 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
     
     console.log('✅ QR code created successfully:', newQrCode);
     
+    // Chiffrer la valeur pour l'URL seulement
+    const encryptedForUrl = encryptQRCode(uniqueCode);
+    
     return {
       ...newQrCode,
-      qr_code: encryptedQrCode, // Retourner la version chiffrée pour l'affichage
+      qr_code: encryptedForUrl, // Retourner la version chiffrée pour l'affichage dans l'URL
       status: (newQrCode.status ?? 'active') as 'active' | 'expired' | 'used',
     };
     
@@ -397,11 +396,11 @@ export const validateQRCode = async (qrCodeData: string): Promise<{
 
     console.log('🔄 Using decrypted code for validation:', decryptedCode);
 
-    // Validation directe dans la base de données
+    // Chercher par qr_code OU par access_key (puisqu'ils sont maintenant identiques)
     const { data: qrCodeRecord, error: dbError } = await supabase
       .from('qr_codes')
       .select('id, user_id, status, expires_at')
-      .eq('qr_code', decryptedCode)
+      .or(`qr_code.eq.${decryptedCode},access_key.eq.${decryptedCode}`)
       .eq('status', 'active')
       .single();
 
@@ -437,31 +436,8 @@ export const validateQRCode = async (qrCodeData: string): Promise<{
 export const validateAccessKey = async (accessKey: string): Promise<{ valid: boolean; userId?: string; qrCodeId?: string }> => {
   console.log('🔄 Validating access key:', accessKey);
   
-  const { data, error } = await supabase
-    .from('qr_codes')
-    .select('id, user_id, status, expires_at')
-    .eq('access_key', accessKey)
-    .eq('status', 'active')
-    .maybeSingle();
-    
-  if (error) {
-    console.error('❌ Error validating access key:', error);
-    return { valid: false };
-  }
-  
-  if (!data) {
-    console.log('❌ Access key not found or inactive');
-    return { valid: false };
-  }
-  
-  const isExpired = new Date(data.expires_at) < new Date();
-  if (isExpired) {
-    console.log('❌ Access key expired');
-    return { valid: false };
-  }
-  
-  console.log('✅ Access key valid for user:', data.user_id);
-  return { valid: true, userId: data.user_id, qrCodeId: data.id };
+  // Maintenant que qr_code et access_key sont identiques, on peut utiliser la même logique
+  return await validateQRCode(accessKey);
 };
 
 // Fonctions de session d'accès médecin améliorées
