@@ -26,10 +26,16 @@ export const useBackButton = () => {
     };
 
     // Écouter l'événement du bouton retour
-    const listener = App.addListener('backButton', handleBackButton);
+    let listenerHandle: any = null;
+    
+    App.addListener('backButton', handleBackButton).then((handle) => {
+      listenerHandle = handle;
+    });
 
     return () => {
-      listener.remove();
+      if (listenerHandle) {
+        listenerHandle.remove();
+      }
     };
   }, [navigate, location.pathname]);
 };

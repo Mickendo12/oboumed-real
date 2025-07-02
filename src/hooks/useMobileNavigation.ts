@@ -26,10 +26,16 @@ export const useMobileNavigation = ({ onBackPress, canGoBack }: UseMobileNavigat
     };
 
     // Écouter l'événement du bouton retour
-    const listener = App.addListener('backButton', handleBackButton);
+    let listenerHandle: any = null;
+    
+    App.addListener('backButton', handleBackButton).then((handle) => {
+      listenerHandle = handle;
+    });
 
     return () => {
-      listener.remove();
+      if (listenerHandle) {
+        listenerHandle.remove();
+      }
     };
   }, [onBackPress, canGoBack]);
 };
