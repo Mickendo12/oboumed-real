@@ -14,15 +14,34 @@ export const useBackButton = () => {
       return;
     }
 
+    let backPressCount = 0;
+    let backPressTimer: NodeJS.Timeout | null = null;
+
     const handleBackButton = () => {
-      // Si on est sur la page d'accueil, on quitte l'app
-      if (location.pathname === '/') {
-        App.exitApp();
+      // Si on n'est pas sur la page d'accueil, navigation normale
+      if (location.pathname !== '/') {
+        navigate(-1);
         return;
       }
 
-      // Sinon, on navigue vers la page précédente
-      navigate(-1);
+      // Si on est sur la page d'accueil, double-tap pour quitter
+      backPressCount++;
+      
+      if (backPressCount === 1) {
+        // Premier appui - afficher un message et démarrer le timer
+        console.log('Appuyez encore une fois pour quitter');
+        
+        // Réinitialiser le compteur après 2 secondes
+        backPressTimer = setTimeout(() => {
+          backPressCount = 0;
+        }, 2000);
+      } else if (backPressCount === 2) {
+        // Deuxième appui - quitter l'app
+        if (backPressTimer) {
+          clearTimeout(backPressTimer);
+        }
+        App.exitApp();
+      }
     };
 
     // Écouter l'événement du bouton retour
@@ -35,6 +54,9 @@ export const useBackButton = () => {
     return () => {
       if (listenerHandle) {
         listenerHandle.remove();
+      }
+      if (backPressTimer) {
+        clearTimeout(backPressTimer);
       }
     };
   }, [navigate, location.pathname]);
