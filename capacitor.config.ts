@@ -11,7 +11,7 @@ const config: CapacitorConfig = {
   },
   plugins: {
     Camera: {
-      permissions: ['camera']
+      permissions: ['camera', 'photos']
     },
     LocalNotifications: {
       smallIcon: "ic_stat_icon_config_sample",
@@ -21,6 +21,13 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ["badge", "sound", "alert"]
     }
+  },
+  android: {
+    permissions: [
+      'android.permission.CAMERA',
+      'android.permission.READ_EXTERNAL_STORAGE',
+      'android.permission.WRITE_EXTERNAL_STORAGE'
+    ]
   }
 };
 

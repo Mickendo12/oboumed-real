@@ -1,10 +1,11 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Camera, X, Scan } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { validateQRCode, getUserProfile, createDoctorSession, logAccess } from '@/services/supabaseService';
+import { Camera as CapacitorCamera } from '@capacitor/camera';
+import { Capacitor } from '@capacitor/core';
 import jsQR from 'jsqr';
 
 interface QRCodeScannerProps {
@@ -15,6 +16,7 @@ interface QRCodeScannerProps {
 const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }) => {
   const [isScanning, setIsScanning] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [permissionGranted, setPermissionGranted] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -26,6 +28,45 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
       stopScanning();
     };
   }, []);
+
+  // Vérifier et demander les permissions caméra
+  const checkCameraPermissions = async (): Promise<boolean> => {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const permissions = await CapacitorCamera.checkPermissions();
+        console.log('Camera permissions status:', permissions);
+        
+        if (permissions.camera !== 'granted') {
+          const requestResult = await CapacitorCamera.requestPermissions();
+          console.log('Permission request result:', requestResult);
+          
+          if (requestResult.camera !== 'granted') {
+            toast({
+              variant: "destructive",
+              title: "Permission refusée",
+              description: "L'accès à la caméra est nécessaire pour scanner les QR codes. Veuillez autoriser l'accès dans les paramètres de l'application."
+            });
+            return false;
+          }
+        }
+        
+        setPermissionGranted(true);
+        return true;
+      } catch (error) {
+        console.error('Error checking camera permissions:', error);
+        toast({
+          variant: "destructive",
+          title: "Erreur de permissions",
+          description: "Impossible de vérifier les permissions caméra."
+        });
+        return false;
+      }
+    } else {
+      // Pour le web, on assume que les permissions seront demandées par getUserMedia
+      setPermissionGranted(true);
+      return true;
+    }
+  };
 
   const extractQRCodeFromUrl = (url: string): string => {
     console.log('🔍 Extracting QR code from URL:', url);
@@ -45,8 +86,16 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
 
   const startVideoScanning = async () => {
     try {
-      setIsScanning(true);
       setLoading(true);
+      
+      // Vérifier les permissions d'abord
+      const hasPermission = await checkCameraPermissions();
+      if (!hasPermission) {
+        setLoading(false);
+        return;
+      }
+
+      setIsScanning(true);
       
       // Essayer d'abord la caméra arrière pour mobile et web
       let stream: MediaStream;
@@ -85,10 +134,21 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
       }
     } catch (error) {
       console.error('Erreur accès caméra:', error);
+      
+      let errorMessage = "Impossible d'accéder à la caméra.";
+      
+      if (error.name === 'NotAllowedError') {
+        errorMessage = "Permission d'accès à la caméra refusée. Veuillez autoriser l'accès dans les paramètres de votre navigateur ou appareil.";
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = "Aucune caméra trouvée sur cet appareil.";
+      } else if (error.name === 'NotReadableError') {
+        errorMessage = "La caméra est utilisée par une autre application.";
+      }
+      
       toast({
         variant: "destructive",
         title: "Erreur caméra",
-        description: "Impossible d'accéder à la caméra. Vérifiez les permissions."
+        description: errorMessage
       });
       setIsScanning(false);
       setLoading(false);
@@ -316,7 +376,7 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
           disabled={loading}
         >
           <Camera size={16} />
-          Démarrer le scan vidéo
+          {loading ? 'Vérification des permissions...' : 'Démarrer le scan vidéo'}
         </Button>
       ) : (
         <Card>
