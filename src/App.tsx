@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -14,25 +15,32 @@ import { useBackButton } from './hooks/useBackButton';
 
 const queryClient = new QueryClient();
 
-function App() {
+// Composant qui gère la navigation mobile à l'intérieur du Router
+function AppContent() {
   // Gérer le bouton retour mobile
   useBackButton();
 
   return (
+    <div className="min-h-screen bg-background">
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/data-config" element={<DataConfig />} />
+        <Route path="/medical-record/:qrCode" element={<PublicPatientProfile />} />
+        <Route path="/qr/:qrCode" element={<SecureQRRedirect />} />
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </div>
+  );
+}
+
+function App() {
+  return (
     <QueryClientProvider client={queryClient}>
       <Router>
         <TooltipProvider>
-          <div className="min-h-screen bg-background">
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/data-config" element={<DataConfig />} />
-              <Route path="/medical-record/:qrCode" element={<PublicPatientProfile />} />
-              <Route path="/qr/:qrCode" element={<SecureQRRedirect />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </div>
+          <AppContent />
           <Toaster />
           <Sonner />
         </TooltipProvider>
