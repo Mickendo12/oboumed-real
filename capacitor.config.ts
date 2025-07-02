@@ -12,6 +12,14 @@ const config: CapacitorConfig = {
   plugins: {
     Camera: {
       permissions: ['camera']
+    },
+    LocalNotifications: {
+      smallIcon: "ic_stat_icon_config_sample",
+      iconColor: "#488AFF",
+      sound: "beep.wav",
+    },
+    PushNotifications: {
+      presentationOptions: ["badge", "sound", "alert"]
     }
   }
 };

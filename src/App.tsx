@@ -12,6 +12,7 @@ import NotFound from "./pages/NotFound";
 import PublicPatientProfile from '@/components/public/PublicPatientProfile';
 import SecureQRRedirect from '@/components/public/SecureQRRedirect';
 import { useBackButton } from './hooks/useBackButton';
+import { useNotificationInit } from './hooks/useNotificationInit';
 
 const queryClient = new QueryClient();
 
@@ -19,6 +20,9 @@ const queryClient = new QueryClient();
 function AppContent() {
   // Gérer le bouton retour mobile
   useBackButton();
+  
+  // Initialiser les notifications
+  useNotificationInit();
 
   return (
     <div className="min-h-screen bg-background">
