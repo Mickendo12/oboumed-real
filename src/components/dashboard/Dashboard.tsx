@@ -15,6 +15,7 @@ import { getRemindersForUser, addReminder, deleteReminder, getUserProfile, getMe
 import { convertDBReminderToForm, convertFormReminderToDB } from '@/services/reminderService';
 import { useToast } from '@/components/ui/use-toast';
 import PrescriptionsList from '../prescriptions/PrescriptionsList';
+import { useProfileCache } from '@/hooks/useProfileCache';
 
 interface DashboardProps {
   userName: string;
@@ -26,47 +27,46 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
   const [isCreatingReminder, setIsCreatingReminder] = useState(false);
   const [reminders, setReminders] = useState<FormReminder[]>([]);
   const [medications, setMedications] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState<'user' | 'doctor' | 'admin'>('user');
   const [activeView, setActiveView] = useState<'dashboard' | 'admin' | 'doctor'>('dashboard');
-  const [userProfile, setUserProfile] = useState<any>(null);
   const { toast } = useToast();
   
-  // Load user profile, reminders, and medications
+  // Utilisation du cache optimisé pour le profil
+  const { profile: userProfile, loading: profileLoading } = useProfileCache(userId);
+  const userRole = userProfile?.role || 'user';
+  
+  // Load user reminders and medications (en arrière-plan)
+  const [dataLoading, setDataLoading] = useState(true);
+  
+  
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchAdditionalData = async () => {
+      if (!userId) return;
+      
       try {
-        if (!userId) return;
+        setDataLoading(true);
         
-        setLoading(true);
-        const [profile, userReminders, userMedications] = await Promise.all([
-          getUserProfile(userId),
+        // Charger rappels et médicaments en parallèle
+        const [userReminders, userMedications] = await Promise.all([
           getRemindersForUser(userId),
           getMedicationsForUser(userId)
         ]);
         
-        if (profile) {
-          setUserRole(profile.role);
-          setUserProfile(profile);
-        }
-        
-        // Convert DB reminders to form reminders
         const formReminders = userReminders.map(convertDBReminderToForm);
         setReminders(formReminders);
         setMedications(userMedications);
       } catch (error) {
-        console.error("Error fetching user data:", error);
+        console.error("Error fetching additional data:", error);
         toast({
           variant: "destructive",
           title: "Erreur",
-          description: "Impossible de charger vos données."
+          description: "Impossible de charger certaines données."
         });
       } finally {
-        setLoading(false);
+        setDataLoading(false);
       }
     };
     
-    fetchUserData();
+    fetchAdditionalData();
   }, [userId, toast]);
   
   const handleSaveReminder = async (reminder: Omit<FormReminder, "id">) => {
@@ -347,7 +347,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {loading ? (
+                  {dataLoading ? (
                     <div className="py-2 xs:py-3 sm:py-4 text-center">
                       <div className="animate-pulse text-[10px] xs:text-xs sm:text-sm">Chargement des médicaments...</div>
                     </div>
@@ -411,7 +411,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
                 )}
               </div>
               
-              {loading ? (
+              {dataLoading ? (
                 <div className="py-2 xs:py-3 sm:py-4 text-center">
                   <div className="animate-pulse text-[10px] xs:text-xs sm:text-sm">Chargement des rappels...</div>
                 </div>

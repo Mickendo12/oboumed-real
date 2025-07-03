@@ -87,13 +87,14 @@ export interface AccessLog {
   admin?: { name?: string; email?: string };
 }
 
-// Profile functions
+// Profile functions - optimized for faster role loading
 export const getUserProfile = async (userId: string): Promise<Profile | null> => {
+  // Utiliser select spécifique pour réduire la latence
   const { data, error } = await supabase
     .from('profiles')
-    .select('*')
+    .select('id, user_id, email, name, phone_number, blood_type, allergies, chronic_diseases, current_medications, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, weight_kg, height_cm, role, share_with_doctor, access_status, doctor_access_key, created_at, updated_at')
     .eq('user_id', userId)
-    .maybeSingle();
+    .single(); // Utiliser single() au lieu de maybeSingle() pour un profil qui doit exister
 
   if (error) {
     console.error('Error fetching user profile:', error);

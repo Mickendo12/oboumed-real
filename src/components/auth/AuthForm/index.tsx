@@ -11,6 +11,7 @@ import LoginForm from '../LoginForm';
 import RegisterStepOne from './RegisterStepOne';
 import RegisterStepTwo from './RegisterStepTwo';
 import PrivacyPolicyAcceptance from '../PrivacyPolicyAcceptance';
+import { invalidateProfileCache } from '@/hooks/useProfileCache';
 
 type AuthMode = 'login' | 'register';
 
@@ -92,6 +93,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
         };
         
         const userCredential = await signUp(data);
+        
+        // Invalider le cache pour forcer le rechargement du profil
+        invalidateProfileCache(userCredential.user.id);
         
         toast({
           title: "Compte créé",
