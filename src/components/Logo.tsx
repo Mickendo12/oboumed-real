@@ -10,17 +10,17 @@ const Logo: React.FC<{ size?: 'sm' | 'md' | 'lg' | 'xl' }> = ({ size = 'md' }) =
   };
 
   const textSizeClasses = {
-    sm: 'text-[8px] xs:text-[9px] sm:text-[10px] lg:text-xs',
-    md: 'text-[10px] xs:text-xs sm:text-sm lg:text-base',
-    lg: 'text-sm xs:text-base sm:text-lg lg:text-xl xl:text-2xl',
-    xl: 'text-lg xs:text-xl sm:text-2xl lg:text-3xl xl:text-4xl',
+    sm: 'text-xs xs:text-sm sm:text-base lg:text-lg',
+    md: 'text-sm xs:text-base sm:text-lg lg:text-xl',
+    lg: 'text-base xs:text-lg sm:text-xl lg:text-2xl xl:text-3xl',
+    xl: 'text-xl xs:text-2xl sm:text-3xl lg:text-4xl xl:text-5xl',
   };
 
   const sloganSizeClasses = {
-    sm: 'text-[6px] xs:text-[7px] sm:text-[8px] lg:text-[9px]',
-    md: 'text-[8px] xs:text-[9px] sm:text-[10px] lg:text-xs',
-    lg: 'text-[10px] xs:text-xs sm:text-sm lg:text-base',
-    xl: 'text-xs xs:text-sm sm:text-base lg:text-lg',
+    sm: 'text-xs xs:text-sm sm:text-base lg:text-lg',
+    md: 'text-sm xs:text-base sm:text-lg lg:text-xl',
+    lg: 'text-base xs:text-lg sm:text-xl lg:text-2xl',
+    xl: 'text-lg xs:text-xl sm:text-2xl lg:text-3xl',
   };
 
   const spacingClasses = {
