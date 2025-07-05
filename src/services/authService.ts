@@ -62,7 +62,8 @@ export const signUp = async (data: SignUpData) => {
     email,
     password,
     options: {
-      data: user_metadata
+      data: user_metadata,
+      emailRedirectTo: `${window.location.origin}/` // OBLIGATOIRE pour éviter les problèmes d'auth
     }
   });
 
@@ -88,7 +89,30 @@ export const signIn = async (data: SignInData) => {
 };
 
 export const logOut = async () => {
-  const { error } = await supabase.auth.signOut();
+  try {
+    // Log de déconnexion
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      await supabase
+        .from('access_logs')
+        .insert({
+          action: 'manual_logout',
+          patient_id: session.user.id,
+          details: {
+            timestamp: new Date().toISOString(),
+            method: 'user_initiated'
+          },
+          ip_address: 'manual_logout'
+        });
+    }
+  } catch (logError) {
+    console.error('Error logging logout:', logError);
+  }
+
+  const { error } = await supabase.auth.signOut({
+    scope: 'local' // Déconnexion locale uniquement, pas globale
+  });
+  
   if (error) {
     throw error;
   }

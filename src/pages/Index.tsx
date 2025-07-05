@@ -8,12 +8,24 @@ import { LayoutDashboard } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { logOut } from '@/services/authService';
 import { useToast } from '@/components/ui/use-toast';
+import { useAutoLogout } from '@/hooks/useAutoLogout';
+import { useSessionCleanup } from '@/hooks/useSessionCleanup';
 
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<{ email: string; displayName?: string | null; id: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  
+  // Configuration de la déconnexion automatique
+  const autoLogout = useAutoLogout({
+    timeoutMinutes: 20, // 20 minutes d'inactivité
+    warningMinutes: 3,  // Avertissement 3 minutes avant
+    enabled: isAuthenticated // Activer seulement si connecté
+  });
+  
+  // Nettoyage automatique des sessions expirées
+  useSessionCleanup();
   
   useEffect(() => {
     // Get initial session
