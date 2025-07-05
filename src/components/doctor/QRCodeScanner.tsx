@@ -62,7 +62,15 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScanSuccess, doctorId }
         return false;
       }
     } else {
-      // Pour le web, on assume que les permissions seront demandées par getUserMedia
+      // Pour le web, vérifier si getUserMedia est disponible
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        toast({
+          variant: "destructive",
+          title: "Caméra non supportée",
+          description: "Votre navigateur ne supporte pas l'accès à la caméra."
+        });
+        return false;
+      }
       setPermissionGranted(true);
       return true;
     }

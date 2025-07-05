@@ -318,6 +318,19 @@ export const generateQRCodeForUser = async (userId: string): Promise<QRCode> => 
     
     console.log('✅ QR code created successfully:', newQrCode);
     
+    // Log de création réussie
+    await logAccess({
+      patient_id: userId,
+      admin_id: userId, // Assumant que l'admin génère le code
+      action: 'qr_code_generated',
+      details: {
+        qr_code_id: newQrCode.id,
+        timestamp: new Date().toISOString(),
+        method: 'admin_dashboard'
+      },
+      ip_address: 'admin_dashboard'
+    });
+    
     // Chiffrer la valeur pour l'URL seulement
     const encryptedForUrl = encryptQRCode(uniqueCode);
     
@@ -403,10 +416,15 @@ export const validateQRCode = async (qrCodeData: string): Promise<{
       .select('id, user_id, status, expires_at')
       .or(`qr_code.eq.${decryptedCode},access_key.eq.${decryptedCode}`)
       .eq('status', 'active')
-      .single();
+      .maybeSingle(); // Utiliser maybeSingle au lieu de single pour éviter les erreurs
 
-    if (dbError || !qrCodeRecord) {
-      console.log('❌ QR code not found in database:', dbError);
+    if (dbError) {
+      console.error('❌ Database error:', dbError);
+      return { valid: false, error: 'Erreur lors de la validation' };
+    }
+
+    if (!qrCodeRecord) {
+      console.log('❌ QR code not found in database');
       return { valid: false, error: 'QR code invalide ou expiré' };
     }
 
@@ -414,6 +432,12 @@ export const validateQRCode = async (qrCodeData: string): Promise<{
     const isExpired = new Date(qrCodeRecord.expires_at) < new Date();
     if (isExpired) {
       console.log('❌ QR code expired');
+      // Marquer comme expiré dans la base
+      await supabase
+        .from('qr_codes')
+        .update({ status: 'expired' })
+        .eq('id', qrCodeRecord.id);
+      
       return { valid: false, error: 'QR code expiré' };
     }
 
