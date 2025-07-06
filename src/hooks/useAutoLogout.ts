@@ -118,7 +118,7 @@ export const useAutoLogout = (options: UseAutoLogoutOptions = {}) => {
     let lastResetTime = 0;
     const throttledReset = () => {
       const now = Date.now();
-      if (now - lastResetTime > 1000) { // Maximum 1 fois par seconde
+      if (now - lastResetTime > 5000) { // Maximum 1 fois toutes les 5 secondes pour optimiser
         lastResetTime = now;
         resetTimeout();
       }

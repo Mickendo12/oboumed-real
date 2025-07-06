@@ -6,33 +6,49 @@ export const useSessionCleanup = () => {
   useEffect(() => {
     const cleanupExpiredSessions = async () => {
       try {
-        console.log('🧹 Nettoyage des sessions expirées...');
-        
-        // Nettoyer les sessions de médecins expirées
-        const { error: doctorSessionError } = await supabase
-          .from('doctor_access_sessions')
-          .update({ is_active: false })
-          .eq('is_active', true)
-          .lt('expires_at', new Date().toISOString());
-
-        if (doctorSessionError) {
-          console.error('Erreur nettoyage sessions médecins:', doctorSessionError);
+        // Vérifier si l'utilisateur est authentifié avant le nettoyage
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) {
+          return; // Pas d'utilisateur connecté, pas de nettoyage nécessaire
         }
 
-        // Nettoyer les QR codes expirés
-        const { error: qrCodeError } = await supabase
-          .from('qr_codes')
-          .update({ status: 'expired' })
-          .eq('status', 'active')
-          .lt('expires_at', new Date().toISOString());
+        console.log('🧹 Nettoyage des sessions expirées...');
+        
+        // Nettoyer les sessions de médecins expirées (seulement si admin/médecin)
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .single();
 
-        if (qrCodeError) {
-          console.error('Erreur nettoyage QR codes:', qrCodeError);
+        if (profile?.role === 'admin' || profile?.role === 'doctor') {
+          const { error: doctorSessionError } = await supabase
+            .from('doctor_access_sessions')
+            .update({ is_active: false })
+            .eq('is_active', true)
+            .lt('expires_at', new Date().toISOString());
+
+          if (doctorSessionError && doctorSessionError.code !== 'PGRST301') {
+            console.error('Erreur nettoyage sessions médecins:', doctorSessionError);
+          }
+
+          const { error: qrCodeError } = await supabase
+            .from('qr_codes')
+            .update({ status: 'expired' })
+            .eq('status', 'active')
+            .lt('expires_at', new Date().toISOString());
+
+          if (qrCodeError && qrCodeError.code !== 'PGRST301') {
+            console.error('Erreur nettoyage QR codes:', qrCodeError);
+          }
         }
 
         console.log('✅ Nettoyage des sessions terminé');
       } catch (error) {
-        console.error('Erreur lors du nettoyage des sessions:', error);
+        // Ignorer les erreurs JWT expirées et autres erreurs d'authentification
+        if (error?.code !== 'PGRST301') {
+          console.error('Erreur lors du nettoyage des sessions:', error);
+        }
       }
     };
 

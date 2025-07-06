@@ -11,11 +11,12 @@ import RemindersList from '../reminders/RemindersList';
 import UserProfile from './UserProfile';
 import AdminDashboard from '../admin/AdminDashboard';
 import DoctorDashboard from '../doctor/DoctorDashboard';
-import { getRemindersForUser, addReminder, deleteReminder, getUserProfile, getMedicationsForUser } from '@/services/supabaseService';
-import { convertDBReminderToForm, convertFormReminderToDB } from '@/services/reminderService';
+import { addReminder, deleteReminder } from '@/services/supabaseService';
+import { convertFormReminderToDB, convertDBReminderToForm } from '@/services/reminderService';
 import { useToast } from '@/components/ui/use-toast';
 import PrescriptionsList from '../prescriptions/PrescriptionsList';
 import { useProfileCache } from '@/hooks/useProfileCache';
+import { useDashboardData } from './hooks/useDashboardData';
 
 interface DashboardProps {
   userName: string;
@@ -25,8 +26,6 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
   const [isCreatingPrescription, setIsCreatingPrescription] = useState(false);
   const [isCreatingReminder, setIsCreatingReminder] = useState(false);
-  const [reminders, setReminders] = useState<FormReminder[]>([]);
-  const [medications, setMedications] = useState<any[]>([]);
   const [activeView, setActiveView] = useState<'dashboard' | 'admin' | 'doctor'>('dashboard');
   const { toast } = useToast();
   
@@ -34,40 +33,14 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
   const { profile: userProfile, loading: profileLoading } = useProfileCache(userId);
   const userRole = userProfile?.role || 'user';
   
-  // Load user reminders and medications (en arrière-plan)
-  const [dataLoading, setDataLoading] = useState(true);
-  
-  
-  useEffect(() => {
-    const fetchAdditionalData = async () => {
-      if (!userId) return;
-      
-      try {
-        setDataLoading(true);
-        
-        // Charger rappels et médicaments en parallèle
-        const [userReminders, userMedications] = await Promise.all([
-          getRemindersForUser(userId),
-          getMedicationsForUser(userId)
-        ]);
-        
-        const formReminders = userReminders.map(convertDBReminderToForm);
-        setReminders(formReminders);
-        setMedications(userMedications);
-      } catch (error) {
-        console.error("Error fetching additional data:", error);
-        toast({
-          variant: "destructive",
-          title: "Erreur",
-          description: "Impossible de charger certaines données."
-        });
-      } finally {
-        setDataLoading(false);
-      }
-    };
-    
-    fetchAdditionalData();
-  }, [userId, toast]);
+  // Utilisation du hook optimisé pour les données
+  const { 
+    reminders, 
+    setReminders, 
+    medications, 
+    dataLoading, 
+    refreshData 
+  } = useDashboardData(userId);
   
   const handleSaveReminder = async (reminder: Omit<FormReminder, "id">) => {
     try {
@@ -110,20 +83,6 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, userId }) => {
     }
   };
 
-  const refreshData = async () => {
-    try {
-      const [userReminders, userMedications] = await Promise.all([
-        getRemindersForUser(userId),
-        getMedicationsForUser(userId)
-      ]);
-      
-      const formReminders = userReminders.map(convertDBReminderToForm);
-      setReminders(formReminders);
-      setMedications(userMedications);
-    } catch (error) {
-      console.error("Error refreshing data:", error);
-    }
-  };
 
   // Check subscription status for access restrictions
   const hasActiveSubscription = userProfile?.access_status === 'active';
