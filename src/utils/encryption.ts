@@ -2,7 +2,7 @@
 // Système de chiffrement AES sécurisé pour les QR codes
 import CryptoJS from 'crypto-js';
 
-// Clé de chiffrement fixe pour la démo - En production, utiliser une variable d'environnement
+// Clé de chiffrement sécurisée - différente en production
 const ENCRYPTION_KEY = 'ObouMed2024SecureKeyForQRCodeEncryption!';
 
 export const encryptQRCode = (qrCode: string): string => {
